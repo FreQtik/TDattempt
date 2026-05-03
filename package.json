@@ -1,0 +1,17 @@
+{
+  "name": "mirror-lane-arcane-td",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Standalone desktop wrapper for Mirror Lane: Arcane Tower Defense.",
+  "scripts": {
+    "tauri": "tauri",
+    "build": "tauri build",
+    "dev": "tauri dev"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}

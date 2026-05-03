@@ -1,0 +1,3373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mirror Lane: Arcane Tower Defense</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg0: #050712;
+      --bg1: #08111f;
+      --panel: rgba(13, 20, 35, 0.84);
+      --panel-2: rgba(20, 31, 52, 0.78);
+      --panel-3: rgba(30, 43, 71, 0.72);
+      --line: rgba(148, 163, 184, 0.18);
+      --line-strong: rgba(148, 163, 184, 0.34);
+      --text: #eef4ff;
+      --soft: #b7c3d7;
+      --muted: #7f8da5;
+      --accent: #38bdf8;
+      --accent2: #a78bfa;
+      --good: #22c55e;
+      --bad: #ef4444;
+      --warn: #f59e0b;
+      --gold: #facc15;
+      --rare: #60a5fa;
+      --epic: #c084fc;
+      --legend: #f59e0b;
+      --shadow: 0 24px 70px rgba(0, 0, 0, 0.36);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { min-height: 100%; }
+
+    body {
+      margin: 0;
+      overflow-x: hidden;
+      background:
+        radial-gradient(circle at 18% -10%, rgba(56, 189, 248, 0.18), transparent 34%),
+        radial-gradient(circle at 92% 4%, rgba(167, 139, 250, 0.16), transparent 31%),
+        linear-gradient(135deg, var(--bg0), var(--bg1) 52%, #070817);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    button, input, select { font: inherit; }
+
+    .app {
+      width: min(1840px, calc(100vw - 24px));
+      margin: 0 auto;
+      padding: 18px 0 24px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: start;
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.35rem, 2vw, 2rem);
+      letter-spacing: -0.045em;
+      line-height: 1.05;
+    }
+
+    .subtitle {
+      margin: 7px 0 0;
+      color: var(--soft);
+      line-height: 1.45;
+      max-width: 980px;
+    }
+
+    .top-actions, .row, .chip-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .top-actions { justify-content: end; }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 310px minmax(720px, 1fr) 380px;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .panel {
+      background: linear-gradient(180deg, var(--panel), rgba(11, 18, 32, 0.78));
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 14px 15px 11px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,0.025);
+    }
+
+    .panel-header h2, .section-title {
+      margin: 0;
+      font-size: 0.78rem;
+      letter-spacing: 0.095em;
+      text-transform: uppercase;
+      color: var(--soft);
+      font-weight: 900;
+    }
+
+    .panel-body { padding: 14px; }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .stat {
+      background: rgba(15, 23, 42, 0.62);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 10px;
+      min-height: 62px;
+    }
+
+    .stat small {
+      display: block;
+      color: var(--muted);
+      font-size: 0.68rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.075em;
+    }
+
+    .stat strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 1.12rem;
+      letter-spacing: -0.025em;
+    }
+
+    .canvas-panel { padding: 12px; }
+
+    canvas {
+      display: block;
+      width: 100%;
+      aspect-ratio: 1080 / 600;
+      border-radius: 22px;
+      background: #07101d;
+      border: 1px solid var(--line-strong);
+      cursor: crosshair;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.018), 0 18px 60px rgba(0,0,0,0.28);
+      opacity: 1;
+      mix-blend-mode: normal;
+      filter: none;
+    }
+
+    .canvas-panel::before, .canvas-panel::after { display: none !important; content: none !important; }
+
+    .hud-strip {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .pill {
+      background: rgba(15, 23, 42, 0.72);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 10px;
+      color: var(--soft);
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .msg {
+      margin-top: 10px;
+      padding: 11px 12px;
+      border: 1px solid var(--line);
+      background: rgba(15, 23, 42, 0.68);
+      border-radius: 18px;
+      color: var(--soft);
+      min-height: 44px;
+      line-height: 1.35;
+      font-weight: 700;
+    }
+
+
+    .quick-send {
+      width: min(960px, 100%);
+      margin: 10px auto 0;
+      border: 1px solid rgba(56, 189, 248, 0.20);
+      background:
+        radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.14), transparent 42%),
+        linear-gradient(180deg, rgba(15, 23, 42, 0.88), rgba(6, 11, 22, 0.84));
+      border-radius: 22px;
+      padding: 12px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+    }
+
+    .quick-send-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .quick-send-head h2 {
+      margin: 0;
+      font-size: 0.78rem;
+      letter-spacing: 0.095em;
+      text-transform: uppercase;
+      color: var(--soft);
+      font-weight: 1000;
+    }
+
+    .send-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 230px;
+      gap: 10px;
+      align-items: start;
+    }
+
+    .send-cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 9px;
+    }
+
+    .queue-box {
+      background: rgba(2, 6, 23, 0.38);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 10px;
+      min-height: 100%;
+    }
+
+    button {
+      border: 0;
+      border-radius: 14px;
+      background: linear-gradient(180deg, #334155, #233047);
+      color: var(--text);
+      padding: 10px 11px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: transform 0.08s ease, filter 0.16s ease, opacity 0.16s ease, border-color 0.16s ease;
+      box-shadow: 0 12px 28px rgba(0,0,0,0.24);
+    }
+
+    button:hover { filter: brightness(1.12); }
+    button:active { transform: translateY(1px) scale(0.99); }
+    button:disabled { opacity: 0.42; cursor: not-allowed; filter: grayscale(0.35); }
+
+    .primary { background: linear-gradient(180deg, #0284c7, #075985); }
+    .danger { background: linear-gradient(180deg, #dc2626, #7f1d1d); }
+    .gold-btn { background: linear-gradient(180deg, #b7791f, #713f12); }
+    .ghost { background: rgba(51, 65, 85, 0.52); box-shadow: none; border: 1px solid var(--line); }
+    .compact { padding: 7px 9px; font-size: 0.78rem; }
+    .wide { width: 100%; }
+
+    .cards { display: grid; gap: 9px; }
+
+    .tower-card, .contract-card, .item-card {
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(30, 41, 59, 0.72), rgba(15, 23, 42, 0.58));
+      border-radius: 18px;
+      padding: 11px;
+      cursor: pointer;
+      transition: transform 0.08s ease, border-color 0.18s ease, background 0.18s ease;
+    }
+
+
+    .tower-card.assault { border-color: rgba(248, 113, 113, 0.28); background: linear-gradient(180deg, rgba(127,29,29,0.20), rgba(15,23,42,0.62)); }
+    .tower-card.defense { border-color: rgba(56,189,248,0.18); }
+    .setup-hint { color: var(--muted); font-size: 0.78rem; line-height: 1.35; margin: 8px 0 0; }
+    .tower-card:hover, .contract-card:hover, .item-card:hover { transform: translateY(-1px); border-color: rgba(56, 189, 248, 0.55); }
+    .tower-card.locked { opacity: 0.42; cursor: not-allowed; filter: grayscale(0.35); }
+    .tower-card.locked:hover { transform: none; border-color: var(--line); }
+    .tower-card.selected, .contract-card.selected { border-color: var(--accent); background: linear-gradient(180deg, rgba(8, 145, 178, 0.22), rgba(15, 23, 42, 0.62)); }
+
+    .card-head { display: flex; justify-content: space-between; gap: 8px; align-items: start; }
+    .card-title { font-weight: 1000; letter-spacing: -0.02em; }
+    .card-price { color: var(--gold); font-weight: 1000; white-space: nowrap; }
+    .card-meta { margin-top: 7px; color: var(--muted); font-size: 0.78rem; line-height: 1.35; }
+    .card-tags { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 8px; }
+    .tag { border: 1px solid var(--line); background: rgba(255,255,255,0.04); border-radius: 999px; padding: 3px 7px; color: var(--soft); font-size: 0.68rem; font-weight: 900; }
+
+    .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-bottom: 10px; }
+    .tab.active { outline: 2px solid rgba(56,189,248,0.6); background: linear-gradient(180deg, #075985, #0c4a6e); }
+
+    .section { margin-top: 14px; }
+    .section:first-child { margin-top: 0; }
+    .section-title { margin-bottom: 9px; }
+
+    .selected-empty {
+      color: var(--muted);
+      line-height: 1.45;
+      background: rgba(15, 23, 42, 0.58);
+      border: 1px dashed var(--line-strong);
+      border-radius: 18px;
+      padding: 14px;
+    }
+
+    .tower-name-line { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .orb { width: 14px; height: 14px; border-radius: 999px; box-shadow: 0 0 18px currentColor; background: currentColor; }
+    .tower-name-line strong { font-size: 1.05rem; }
+    .muted { color: var(--muted); }
+    .soft { color: var(--soft); }
+
+    .xpbar, .coolbar {
+      height: 9px;
+      background: rgba(15, 23, 42, 0.92);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+    .xpbar > span, .coolbar > span { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); width: 0%; }
+    .coolbar > span { background: linear-gradient(90deg, var(--warn), var(--bad)); }
+
+    .mini-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; margin-top: 10px; }
+    .mini {
+      background: rgba(15, 23, 42, 0.58);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 8px;
+    }
+    .mini small { display: block; color: var(--muted); font-weight: 900; text-transform: uppercase; font-size: 0.62rem; letter-spacing: 0.08em; }
+    .mini strong { display: block; margin-top: 3px; font-size: 0.92rem; }
+
+    .slot-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    .slot {
+      width: 58px;
+      height: 58px;
+      border-radius: 15px;
+      border: 1px solid var(--line-strong);
+      background: rgba(0,0,0,0.34);
+      display: grid;
+      place-items: center;
+      position: relative;
+      cursor: pointer;
+      overflow: hidden;
+    }
+    .slot.equipped { background: linear-gradient(135deg, rgba(22, 163, 74, 0.30), rgba(5, 46, 22, 0.35)); border-color: rgba(34, 197, 94, 0.55); }
+    .slot .icon { font-size: 1.35rem; }
+    .slot .idx { position: absolute; top: 4px; right: 6px; color: var(--muted); font-size: 0.62rem; font-weight: 900; }
+
+    .log {
+      display: grid;
+      gap: 7px;
+      max-height: 172px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+    .log-entry {
+      color: var(--soft);
+      background: rgba(15, 23, 42, 0.54);
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      padding: 8px 9px;
+      line-height: 1.32;
+      font-size: 0.78rem;
+    }
+
+    .queue {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      min-height: 32px;
+      align-items: center;
+    }
+    .queue-chip {
+      padding: 5px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(250, 204, 21, 0.28);
+      background: rgba(113, 63, 18, 0.36);
+      color: #fde68a;
+      font-size: 0.72rem;
+      font-weight: 900;
+    }
+
+    .loot-toasts {
+      position: fixed;
+      inset: 0;
+      display: none;
+      pointer-events: none;
+      place-items: start center;
+      padding-top: 92px;
+      z-index: 30;
+    }
+
+    .loot-toasts.show { display: grid; }
+
+    .loot-popup {
+      width: min(520px, calc(100vw - 28px));
+      border: 1px solid rgba(250, 204, 21, 0.54);
+      border-radius: 26px;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(250, 204, 21, 0.24), transparent 46%),
+        linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(5, 9, 18, 0.96));
+      box-shadow: 0 34px 120px rgba(0,0,0,0.58), 0 0 80px rgba(250, 204, 21, 0.14);
+      padding: 18px;
+      animation: lootIn 0.28s ease-out both;
+    }
+
+    .loot-popup h2 { margin: 0 0 5px; letter-spacing: -0.04em; font-size: 1.45rem; }
+    .loot-popup p { margin: 0 0 14px; color: var(--soft); }
+    .loot-items { display: grid; gap: 8px; }
+    .loot-item { display: flex; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 16px; padding: 10px; background: rgba(15,23,42,0.70); }
+    .loot-icon { width: 34px; height: 34px; border-radius: 12px; display: grid; place-items: center; background: rgba(255,255,255,0.08); font-size: 1.25rem; }
+    .loot-name { font-weight: 1000; }
+    .loot-rarity { color: var(--muted); font-size: 0.78rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em; }
+
+    @keyframes lootIn {
+      from { opacity: 0; transform: translateY(-16px) scale(0.96); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .modal-backdrop, .start-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 6, 23, 0.72);
+      backdrop-filter: blur(12px);
+      display: none;
+      place-items: center;
+      padding: 20px;
+      z-index: 20;
+    }
+    .modal-backdrop:not(.show), .start-backdrop:not(.show) { display: none !important; pointer-events: none; backdrop-filter: none; }
+    .modal-backdrop.show, .start-backdrop.show { display: grid; }
+
+    .modal, .start-card {
+      width: min(860px, calc(100vw - 30px));
+      max-height: min(82vh, 840px);
+      overflow: auto;
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(5, 9, 18, 0.98));
+      border: 1px solid var(--line-strong);
+      border-radius: 26px;
+      box-shadow: 0 32px 120px rgba(0, 0, 0, 0.55);
+      padding: 18px;
+    }
+
+    .modal-head { display: flex; justify-content: space-between; gap: 12px; align-items: start; margin-bottom: 14px; }
+    .modal h2, .start-card h2 { margin: 0 0 5px; letter-spacing: -0.035em; }
+    .modal p, .start-card p { margin: 0; color: var(--soft); line-height: 1.45; }
+
+    .item-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+    .item-card { cursor: pointer; min-height: 126px; }
+    .item-card.equipped { background: linear-gradient(180deg, rgba(22, 163, 74, 0.22), rgba(15, 23, 42, 0.72)); border-color: rgba(34, 197, 94, 0.6); }
+    .item-card.free { background: linear-gradient(180deg, rgba(15, 23, 42, 0.82), rgba(2, 6, 23, 0.72)); }
+    .vendor-offer { cursor: default; position: relative; }
+    .vendor-offer:hover { transform: none; }
+    .vendor-offer .buy-line { margin-top: 12px; display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+    .vendor-price { color: var(--gold); font-weight: 1000; }
+    .focus-hint { color: #7dd3fc; }
+    .rarity-common { color: #cbd5e1; }
+    .rarity-rare { color: var(--rare); }
+    .rarity-epic { color: var(--epic); }
+    .rarity-legendary { color: var(--legend); }
+
+    .passive-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-top: 12px; }
+    .difficulty-grid { margin-bottom: 16px; }
+    .setup-label { margin-top: 16px; color: var(--muted); font-size: 0.72rem; font-weight: 1000; text-transform: uppercase; letter-spacing: 0.095em; }
+    .setup-label:first-of-type { margin-top: 14px; }
+    .passive {
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 14px;
+      background: rgba(15, 23, 42, 0.62);
+      cursor: pointer;
+    }
+    .passive:hover { border-color: rgba(56,189,248,0.62); background: rgba(8, 47, 73, 0.35); }
+    .passive.selected { border-color: var(--accent); background: linear-gradient(180deg, rgba(8,145,178,0.26), rgba(15,23,42,0.78)); box-shadow: inset 0 0 0 1px rgba(56,189,248,0.22); }
+    .passive strong { display: block; margin-bottom: 6px; }
+    .passive span { color: var(--soft); line-height: 1.4; font-size: 0.88rem; }
+
+    @media (max-width: 1360px) {
+      .shell { grid-template-columns: 310px 1fr; }
+      .right-col { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+      .send-layout { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 900px) {
+      .topbar, .shell, .right-col, .passive-grid { grid-template-columns: 1fr; }
+      .top-actions { justify-content: start; }
+      .hud-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .send-cards { grid-template-columns: 1fr; }
+      .quick-send-head { flex-direction: column; align-items: stretch; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div>
+        <h1>Mirror Lane: Arcane Tower Defense</h1>
+        <p class="subtitle">PvE duel prototype. You defend the left mirrored lane, an AI defends the right lane, and both sides can pressure each other. Bosses drop items, towers cap at level 3, and real power comes from merging, equipment, auras, assault towers, and positioning.</p>
+      </div>
+      <div class="top-actions">
+        <button id="pauseBtn" class="ghost">Pause</button>
+        <button id="startWaveBtn" class="primary">Start Next Wave</button>
+        <button id="newGameBtn" class="danger">New Run</button>
+      </div>
+    </header>
+
+    <section class="shell">
+      <aside class="panel left-col">
+        <div class="panel-header"><h2>Selected tower</h2></div>
+        <div class="panel-body" id="selectedPanel"></div>
+      </aside>
+
+      <main class="panel canvas-panel">
+        <div class="hud-strip">
+          <div class="pill">Lives <strong id="lifeText">30</strong></div>
+          <div class="pill">Gold <strong id="goldText">0</strong></div>
+          <div class="pill">AI Lives <strong id="aiLifeText">30</strong></div>
+          <div class="pill">Wave <strong id="waveText">0</strong></div>
+          <div class="pill">Next wave <strong id="timerText">--</strong></div>
+        </div>
+        <canvas id="game" width="1080" height="600" aria-label="Mirror Lane Tower Defense board"></canvas>
+        <div class="msg" id="message">Choose a passive to begin.</div>
+        <section class="quick-send" aria-label="Send pressure to AI">
+          <div class="quick-send-head">
+            <h2>Send pressure to AI</h2>
+            <div class="tabs" style="margin:0; min-width:260px">
+              <button class="tab active" id="queuedTab">Next wave</button>
+              <button class="tab" id="directTab">Direct aura units</button>
+            </div>
+          </div>
+          <div class="send-layout">
+            <div class="send-cards" id="contractCards"></div>
+            <div class="queue-box">
+              <div class="section-title">Queued for next wave</div>
+              <div class="queue" id="queueView"></div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <aside class="right-col">
+        <section class="panel">
+          <div class="panel-header"><h2>Command center</h2></div>
+          <div class="panel-body">
+            <div class="section">
+              <div class="section-title">Build towers</div>
+              <div class="cards" id="towerCards"></div>
+            </div>
+
+            <div class="section">
+              <div class="section-title">Permanent gamble</div>
+              <button class="gold-btn wide" id="gambleBtn">🎲 Gamble Item</button>
+              <p class="setup-hint">25% chance to receive a random item. Disabled until you have placed at least one tower.</p>
+            </div>
+
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header"><h2>Run intelligence</h2></div>
+          <div class="panel-body">
+            <div class="stat-grid">
+              <div class="stat"><small>Passive</small><strong id="passiveText">None</strong></div>
+              <div class="stat"><small>Difficulty</small><strong id="difficultyText">Normal</strong></div>
+              <div class="stat"><small>Replace CD</small><strong id="replaceText">Ready</strong></div>
+              <div class="stat"><small>Inventory</small><strong id="inventoryText">0 Items</strong></div>
+              <div class="stat"><small>Vendor Chance</small><strong id="vendorText">10%</strong></div>
+              <div class="stat"><small>Threat</small><strong id="threatText">Stable</strong></div>
+            </div>
+            <div class="section">
+              <div class="section-title">Combat log</div>
+              <div class="log" id="log"></div>
+            </div>
+          </div>
+        </section>
+      </aside>
+    </section>
+  </div>
+
+  <div class="modal-backdrop" id="itemModal">
+    <div class="modal">
+      <div class="modal-head">
+        <div>
+          <h2>Equip item</h2>
+          <p id="itemModalSub">Select an item for this tower slot. Green cards are already equipped.</p>
+        </div>
+        <button class="ghost" id="closeItemModal">Close</button>
+      </div>
+      <div class="row" style="margin-bottom:12px">
+        <button class="danger" id="unequipSlotBtn">Unequip this slot</button>
+      </div>
+      <div class="item-list" id="itemList"></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="vendorModal">
+    <div class="modal">
+      <div class="modal-head">
+        <div>
+          <h2>Traveling Vendor</h2>
+          <p id="vendorSub">The wave is paused. Buy one item, or leave and continue fighting.</p>
+        </div>
+        <button class="ghost" id="closeVendorModal">Leave</button>
+      </div>
+      <div class="item-list" id="vendorList"></div>
+    </div>
+  </div>
+
+  <div class="loot-toasts" id="lootToasts" aria-live="polite" aria-label="Item rewards"></div>
+
+  <div class="start-backdrop show" id="startModal">
+    <div class="start-card">
+      <h2>Choose your run setup</h2>
+      <p>Pick a difficulty first, then choose one passive. Higher difficulties make the AI defend better, scale faster, and send stronger pressure back at you.</p>
+      <div class="setup-label">Difficulty</div>
+      <div class="passive-grid difficulty-grid" id="difficultyGrid"></div>
+      <div class="setup-label">Passive</div>
+      <div class="passive-grid" id="passiveGrid"></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="prepModal">
+    <div class="modal">
+      <div class="modal-head">
+        <div>
+          <h2>Prepare before Wave 1</h2>
+          <p>Place your first random defense towers, gamble if you want, then press Ready. The first wave will not start until you confirm.</p>
+        </div>
+      </div>
+      <div class="row">
+        <button class="primary" id="prepReadyBtn">Ready — start Wave 1</button>
+        <button class="ghost" id="prepContinueBtn">Continue placing towers</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  "use strict";
+
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
+
+  const COLS = 10;
+  const ROWS = 9;
+  const CELL = 44;
+  const BOARD_W = COLS * CELL;
+  const BOARD_H = ROWS * CELL;
+  const PLAYER_X = 34;
+  const AI_X = 606;
+  const BOARD_Y = 98;
+  const START_LIVES = 30;
+  const START_GOLD = 180;
+  const BASE_WAVE_INTERVAL = 23;
+  const REPLACE_CD = 45;
+  const PORTAL_CD = 30;
+  const MAX_LEVEL = 3;
+  const MAX_GRADE = 4;
+  const ATTACK_SLOTS = 5;
+  const ATTACK_SLOT_Y = BOARD_Y + BOARD_H + 54;
+  const TOWER_REPAIR_CD = 20;
+
+  const basePathCells = [
+    [0,1],[1,1],[2,1],[3,1],[4,1],[5,1],[6,1],[7,1],[8,1],
+    [8,2],[8,3],[8,4],
+    [7,4],[6,4],[5,4],[4,4],[3,4],[2,4],
+    [2,5],[2,6],[2,7],
+    [3,7],[4,7],[5,7],[6,7],[7,7],[8,7],[9,7]
+  ];
+
+  const towerDefs = {
+    volt: {
+      name: "Volt Spire", icon: "⚡", cost: 5, color: "#38bdf8", range: 132, damage: 23, attackSpeed: 1.65,
+      role: "Chain / anti-swarm", ability: "Grade II chains to one enemy. Grade III overcharges for burst hits."
+    },
+    mortar: {
+      name: "Ash Mortar", icon: "🔥", cost: 7, color: "#fb923c", range: 124, damage: 70, attackSpeed: 0.72,
+      role: "Splash / armor break", ability: "Explosive splash. Higher grades ignite a larger area."
+    },
+    cryo: {
+      name: "Cryo Prism", icon: "❄", cost: 6, color: "#a78bfa", range: 126, damage: 16, attackSpeed: 1.18,
+      role: "Slow / control", ability: "Applies heavy slow. Level 3 occasionally freezes."
+    },
+    relay: {
+      name: "Warden Relay", icon: "◈", cost: 8, color: "#22c55e", range: 112, damage: 10, attackSpeed: 0.95,
+      role: "Support aura", ability: "Buffs nearby tower damage and attack speed."
+    },
+    portal: {
+      name: "Teleport Gate", icon: "⟲", cost: 9, color: "#e879f9", range: 150, damage: 5, attackSpeed: 0.55,
+      role: "Path manipulation", ability: "Set two path cells. First cell teleports to second, then buffs enemy speed by +50%."
+    },
+    venom: {
+      name: "Venom Bloom", icon: "☠", cost: 6, color: "#84cc16", range: 118, damage: 11, attackSpeed: 1.35,
+      role: "Poison / damage over time", ability: "Poisons targets for stacking damage over time. Higher grades extend and intensify poison."
+    },
+    blade: {
+      name: "Blade Bastion", icon: "⚔", cost: 5, color: "#f43f5e", range: 58, damage: 19, attackSpeed: 2.85,
+      role: "Melee / fast strikes", ability: "Tiny range but very high attack speed. Higher grades strike additional enemies at close range."
+    },
+    shield: {
+      name: "Tactical Shield", icon: "⬡", cost: 7, color: "#67e8f9", range: 132, damage: 0, attackSpeed: 0.05, attackTower: true, assault: "shield", dualPlace: true, support: "shield",
+      role: "Defense / armor aura", ability: "Field or assault support tower. Towers in range take reduced damage from enemy assault towers."
+    },
+    tentacle: {
+      name: "Tentacle Nest", icon: "〽", cost: 7, color: "#d946ef", range: 92, damage: 9, attackSpeed: 0.92,
+      role: "Summon / chain growth", ability: "Short attack range. Hits spawn temporary tentacles that attack twice and may create more tentacles."
+    },
+    dart: {
+      name: "Dart Array", icon: "➳", cost: 6, color: "#fda4af", range: 760, damage: 1, attackSpeed: 3.15, attackTower: true, assault: "dart",
+      role: "Assault / tower harass", ability: "Only occupies the 5 assault slots below the lane. Fast random tower shots, tuned to 1 base damage so repair and shield counter it."
+    },
+    repair: {
+      name: "Repair Matrix", icon: "✚", cost: 7, color: "#34d399", range: 155, damage: 0, attackSpeed: 0.05, attackTower: true, assault: "repair", dualPlace: true, support: "repair",
+      role: "Repair / sustain", ability: "Can be placed either on the field or in assault slots. Repairs itself and up to 3 damaged allied towers every 20 seconds."
+    },
+    towerSlow: {
+      name: "Freeze Lobber", icon: "☄", cost: 8, color: "#93c5fd", range: 780, damage: 2, attackSpeed: 0.26, attackTower: true, assault: "slow",
+      role: "Assault / tower freeze", ability: "Lobs a slow high-arc projectile at enemy towers, dealing low damage and freezing them briefly."
+    },
+    clone: {
+      name: "Clone Beacon", icon: "⧉", cost: 10, color: "#c084fc", range: 165, damage: 0, attackSpeed: 0.07, attackTower: true, assault: "clone",
+      role: "Assault support / temporary copy", ability: "Copies a random allied tower for a short duration. Clones keep level, grade, and item effects, then vanish."
+    },
+    healer: {
+      name: "Field Medic", icon: "♡", cost: 7, color: "#86efac", range: 720, damage: 0, attackSpeed: 0.22, attackTower: true, assault: "healer",
+      role: "Assault / wave healer", ability: "Heals allied wave units on the enemy lane with a cooldown. Excellent with Living Bomb and tank sends."
+    },
+    blizzard: {
+      name: "Blizzard Spire", icon: "☃", cost: 9, color: "#bfdbfe", range: 720, damage: 4, attackSpeed: 0.11, attackTower: true, assault: "blizzard",
+      role: "Assault / storm cast", ability: "Long cooldown. Casts a blizzard on enemy wave units, slowing and damaging everyone in the storm."
+    }
+  };
+
+  const defenseRandomPool = [
+    { type: "volt", weight: 18 }, { type: "blade", weight: 16 }, { type: "cryo", weight: 13 },
+    { type: "venom", weight: 13 }, { type: "mortar", weight: 11 }, { type: "tentacle", weight: 10 },
+    { type: "relay", weight: 7 }, { type: "shield", weight: 7 }, { type: "repair", weight: 5 }, { type: "portal", weight: 3 }
+  ];
+  const defensiveAssaultRandomPool = [
+    { type: "repair", weight: 58 }, { type: "shield", weight: 42 }
+  ];
+  const offensiveAssaultRandomPool = [
+    { type: "dart", weight: 30 }, { type: "towerSlow", weight: 22 }, { type: "healer", weight: 20 },
+    { type: "blizzard", weight: 16 }, { type: "clone", weight: 12 }
+  ];
+  const randomBuildDefs = {
+    randomDefense: { name: "Random Defense Tower", cost: 75, category: "defense", elite: false, note: "Rolls a defense or support tower based on weighted rarity." },
+    randomDefenseElite: { name: "Ascended Defense Roll", cost: 190, category: "defense", elite: true, note: "Rolls a random defense tower and creates it at level 3." },
+    randomAssaultDefense: { name: "Defensive Assault Roll", cost: 125, category: "assaultDefense", elite: false, note: "Rolls Repair Matrix or Tactical Shield for an assault slot. Unlocks after wave 5." },
+    randomAssaultOffense: { name: "Offensive Assault Roll", cost: 125, category: "assaultOffense", elite: false, note: "Rolls an offensive assault tower. Unlocks after wave 5." }
+  };
+
+  const waveEnemyDefs = {
+    skitter: { name: "Skitter", icon: "•", hp: 42, speed: 76, reward: 1, xp: 3, color: "#bbf7d0", radius: 6 },
+    runner: { name: "Runner", icon: "›", hp: 64, speed: 104, reward: 2, xp: 4, color: "#fde68a", radius: 7 },
+    brute: { name: "Brute", icon: "■", hp: 230, speed: 43, reward: 5, xp: 7, color: "#fca5a5", radius: 11, armor: 0.08 },
+    splitter: { name: "Splitter", icon: "✣", hp: 145, speed: 60, reward: 3, xp: 6, color: "#f0abfc", radius: 9, split: true },
+    vendor: { name: "Traveling Vendor", icon: "¤", hp: 180, speed: 54, reward: 4, xp: 3, color: "#facc15", radius: 13, vendor: true, armor: 0.04 },
+    boss: { name: "Boss", icon: "◆", hp: 1100, speed: 35, reward: 35, xp: 36, color: "#f59e0b", radius: 18, boss: true, armor: 0.12 }
+  };
+
+  const contractDefs = {
+    queued: {
+      raiders: { name: "Raid Pack", cost: 4, unit: "runner", count: 5, power: 0.82, tag: "Fast pressure", note: "Arrives with the next wave on the AI lane." },
+      bulwarks: { name: "Bulwark Pair", cost: 6, unit: "brute", count: 2, power: 0.94, tag: "Tank pressure", note: "Slow but durable. Good against weak AI splash." },
+      splitters: { name: "Splitter Knot", cost: 8, unit: "splitter", count: 4, power: 0.9, tag: "Leak maker", note: "Splits on death, forcing extra targeting." }
+    },
+    direct: {
+      drummer: { name: "Haste Drummer", cost: 5, unit: "drummer", count: 1, tag: "Aura", note: "Direct. Speeds nearby allied units by 28%." },
+      jammer: { name: "Signal Jammer", cost: 6, unit: "jammer", count: 1, tag: "Anti-tower", note: "Direct. Slows nearby tower attack speed by 28%." },
+      aegis: { name: "Aegis Carrier", cost: 7, unit: "aegis", count: 1, tag: "Shield", note: "Direct. Nearby units take 22% less damage." },
+      livingBomb: { name: "Living Bomb", cost: 7, unit: "livingBomb", count: 1, tag: "Heal bomb", note: "Direct. When killed, it explodes and heals nearby allied units." }
+    }
+  };
+
+  const auraEnemyDefs = {
+    drummer: { name: "Haste Drummer", hp: 310, speed: 48, reward: 5, xp: 9, color: "#fbbf24", radius: 12, aura: "haste" },
+    jammer: { name: "Signal Jammer", hp: 360, speed: 42, reward: 5, xp: 10, color: "#93c5fd", radius: 12, aura: "jammer" },
+    aegis: { name: "Aegis Carrier", hp: 430, speed: 39, reward: 6, xp: 11, color: "#c4b5fd", radius: 13, aura: "shield" },
+    livingBomb: { name: "Living Bomb", hp: 260, speed: 54, reward: 5, xp: 9, color: "#fb7185", radius: 13, healBurst: true }
+  };
+
+  const itemDefs = {
+    fireOrb: { name: "Fire Orb", icon: "🔥", rarity: "rare", desc: "Attacks splash for 38% damage in a small area.", effects: { splashRadius: 58, splashPct: 0.38 } },
+    corruptionOrb: { name: "Corruption Orb", icon: "☣", rarity: "rare", desc: "Hits slow enemies by 30% for 1.6s.", effects: { slowPct: 0.30, slowDur: 1.6 } },
+    multihit: { name: "Multihit Core", icon: "✦", rarity: "epic", desc: "Shoots one additional target every attack.", effects: { extraTargets: 1 } },
+    frostNeedle: { name: "Slow Hit", icon: "❄", rarity: "common", desc: "Hits slow enemies by 18% for 1.2s.", effects: { slowPct: 0.18, slowDur: 1.2 } },
+    stunSpark: { name: "Stun Hit", icon: "✹", rarity: "rare", desc: "12% chance to stun for 0.42s on hit.", effects: { stunChance: 0.12, stunDur: 0.42 } },
+    quickGear: { name: "IAS Gyro", icon: "⏱", rarity: "common", desc: "+20% attack speed.", effects: { attackSpeedPct: 0.20 } },
+    warCore: { name: "War Core", icon: "◆", rarity: "rare", desc: "+26% attack damage.", effects: { damagePct: 0.26 } },
+    healthCore: { name: "Health Core", icon: "♥", rarity: "rare", desc: "+100% tower health.", effects: { healthPct: 1.00 } },
+    tempoCrown: { name: "Tempo Aura", icon: "♬", rarity: "epic", desc: "Nearby towers gain +14% attack speed.", effects: { auraAspdPct: 0.14, auraRange: 150 } },
+    gravityStone: { name: "Gravity Aura", icon: "⬤", rarity: "epic", desc: "Nearby enemies are slowed by 12%.", effects: { auraEnemySlowPct: 0.12, auraRange: 155 } },
+    exposureSigil: { name: "Exposure Aura", icon: "◇", rarity: "epic", desc: "Nearby enemies receive +14% damage.", effects: { auraVulnPct: 0.14, auraRange: 155 } },
+    commandHalo: { name: "Command Aura", icon: "◎", rarity: "epic", desc: "Nearby towers gain +16% damage.", effects: { auraDmgPct: 0.16, auraRange: 150 } },
+    mysticalBeam: { name: "Mystical Beam", icon: "▰", rarity: "legendary", desc: "Links to same item within range. Beam slows by 20% and deals fast low damage. Also grants +8% attack speed.", effects: { beam: true, attackSpeedPct: 0.08 } },
+    dragonLens: { name: "Dragon Lens", icon: "🐉", rarity: "legendary", desc: "Legendary: +1 target and 50% splash damage.", effects: { extraTargets: 1, splashRadius: 72, splashPct: 0.50 } },
+    nullCrown: { name: "Null Crown", icon: "♛", rarity: "legendary", desc: "Legendary: stun hits and exposes nearby enemies.", effects: { stunChance: 0.12, stunDur: 0.36, auraVulnPct: 0.10, auraRange: 150 } }
+  };
+
+  const passives = {
+    resonant: {
+      name: "Resonant Training",
+      short: "XP Share",
+      desc: "When a level 3 tower earns XP, that XP is shared to nearby towers that are not level 3 yet."
+    },
+    hunter: {
+      name: "Boss Hunter",
+      short: "Boss Loot",
+      desc: "Bosses take +12% damage from your towers and always drop one extra item."
+    },
+    pressure: {
+      name: "Pressure Economy",
+      short: "Send Gold",
+      desc: "Sending units refunds 16% of its cost and AI leaks give +2 gold."
+    },
+    seller: {
+      name: "Big Seller",
+      short: "Big Seller",
+      desc: "Traveling Vendors offer 3 additional items, for 6 shop choices total."
+    },
+    keepsake: {
+      name: "Lucky Keepsake",
+      short: "Starter Item",
+      desc: "Start the run with one random item in your inventory."
+    }
+  };
+
+  const difficultyDefs = {
+    apprentice: {
+      name: "Apprentice", short: "Apprentice", badge: "Learning", desc: "Lower AI pressure and lighter counterattacks. Good for testing builds.",
+      aiLives: 25, aiStartGold: 18, aiEconomy: 0.85, aiBuildRate: 0.85, aiDamage: 0.95, aiAspd: 0.95,
+      aiPressure: 0.85, playerWavePower: 0.90, aiNeutralPower: 0.88, aiIncomingPower: 1.05, aiStarterExtra: 0, aiStarterLevel: 1
+    },
+    normal: {
+      name: "Strategist", short: "Strategist", badge: "Default", desc: "Balanced AI with better defense than the early prototype.",
+      aiLives: 35, aiStartGold: 28, aiEconomy: 1.10, aiBuildRate: 1.15, aiDamage: 1.10, aiAspd: 1.05,
+      aiPressure: 1.08, playerWavePower: 1.00, aiNeutralPower: 0.80, aiIncomingPower: 0.95, aiStarterExtra: 1, aiStarterLevel: 1
+    },
+    rival: {
+      name: "Rival", short: "Rival", badge: "Hard", desc: "AI gets more lives, faster build tempo, stronger towers, and more pressure sends.",
+      aiLives: 50, aiStartGold: 38, aiEconomy: 1.45, aiBuildRate: 1.50, aiDamage: 1.30, aiAspd: 1.15,
+      aiPressure: 1.35, playerWavePower: 1.15, aiNeutralPower: 0.70, aiIncomingPower: 0.82, aiStarterExtra: 2, aiStarterLevel: 2
+    },
+    nightmare: {
+      name: "Nightmare", short: "Nightmare", badge: "Brutal", desc: "The AI is heavily fortified and sends punishing counter-pressure. Intended for optimized builds.",
+      aiLives: 70, aiStartGold: 54, aiEconomy: 1.85, aiBuildRate: 1.95, aiDamage: 1.58, aiAspd: 1.25,
+      aiPressure: 1.75, playerWavePower: 1.32, aiNeutralPower: 0.62, aiIncomingPower: 0.70, aiStarterExtra: 4, aiStarterLevel: 2
+    }
+  };
+
+  let idCounter = 1;
+  const uid = prefix => `${prefix}_${idCounter++}`;
+
+  let state;
+  let slotHitRects = [];
+  let last = performance.now();
+  let modalSlot = null;
+  let uiDirty = true;
+  let activeContractTab = "queued";
+  let pendingDifficulty = "normal";
+
+  const el = {
+    selectedPanel: document.getElementById("selectedPanel"),
+    towerCards: document.getElementById("towerCards"),
+    contractCards: document.getElementById("contractCards"),
+    queueView: document.getElementById("queueView"),
+    message: document.getElementById("message"),
+    log: document.getElementById("log"),
+    lifeText: document.getElementById("lifeText"),
+    goldText: document.getElementById("goldText"),
+    aiLifeText: document.getElementById("aiLifeText"),
+    waveText: document.getElementById("waveText"),
+    timerText: document.getElementById("timerText"),
+    replaceText: document.getElementById("replaceText"),
+    inventoryText: document.getElementById("inventoryText"),
+    vendorText: document.getElementById("vendorText"),
+    passiveText: document.getElementById("passiveText"),
+    difficultyText: document.getElementById("difficultyText"),
+    threatText: document.getElementById("threatText"),
+    queuedTab: document.getElementById("queuedTab"),
+    directTab: document.getElementById("directTab"),
+    itemModal: document.getElementById("itemModal"),
+    vendorModal: document.getElementById("vendorModal"),
+    vendorList: document.getElementById("vendorList"),
+    vendorSub: document.getElementById("vendorSub"),
+    lootToasts: document.getElementById("lootToasts"),
+    itemList: document.getElementById("itemList"),
+    itemModalSub: document.getElementById("itemModalSub"),
+    startModal: document.getElementById("startModal"),
+    difficultyGrid: document.getElementById("difficultyGrid"),
+    passiveGrid: document.getElementById("passiveGrid"),
+    prepModal: document.getElementById("prepModal"),
+    prepReadyBtn: document.getElementById("prepReadyBtn"),
+    prepContinueBtn: document.getElementById("prepContinueBtn"),
+    gambleBtn: document.getElementById("gambleBtn")
+  };
+
+  function makeLane(side) {
+    const mirrored = side === "ai";
+    const boardX = mirrored ? AI_X : PLAYER_X;
+    const cells = mirrored ? basePathCells.map(([c, r]) => [COLS - 1 - c, r]) : basePathCells.map(p => [...p]);
+    const points = cells.map(([c, r]) => ({ x: boardX + c * CELL + CELL / 2, y: BOARD_Y + r * CELL + CELL / 2 }));
+    const segs = [];
+    let length = 0;
+    for (let i = 0; i < points.length - 1; i++) {
+      const d = Math.hypot(points[i+1].x - points[i].x, points[i+1].y - points[i].y);
+      segs.push(d);
+      length += d;
+    }
+    return {
+      side,
+      boardX,
+      boardY: BOARD_Y,
+      label: side === "player" ? "Your Lane" : "AI Mirror Lane",
+      lives: START_LIVES,
+      towers: [],
+      enemies: [],
+      shots: [],
+      effects: [],
+      beams: [],
+      tentacles: [],
+      pathCells: cells,
+      pathSet: new Set(cells.map(([c,r]) => `${c},${r}`)),
+      pathPoints: points,
+      segments: segs,
+      pathLength: length,
+      focusEnemyId: null,
+      focusTowerId: null,
+      floaters: [],
+      leakedFlash: 0
+    };
+  }
+
+  function newState(passiveKey = null, difficultyKey = pendingDifficulty) {
+    const diff = difficultyDefs[difficultyKey] || difficultyDefs.normal;
+    const s = {
+      running: Boolean(passiveKey),
+      paused: false,
+      gameOver: false,
+      victory: false,
+      passive: passiveKey,
+      difficulty: difficultyKey,
+      gold: START_GOLD,
+      aiGold: diff.aiStartGold,
+      wave: 0,
+      nextWave: 999,
+      waveInProgress: false,
+      prepPending: Boolean(passiveKey),
+      gambleAttempts: 0,
+      replaceCd: 0,
+      selectedBuild: "randomDefense",
+      selectedTowerId: null,
+      mode: "build",
+      portalTarget: null,
+      relocatingTowerId: null,
+      playerQueue: [],
+      aiQueue: [],
+      inventory: [],
+      vendorChance: 0.10,
+      vendorOffers: [],
+      vendorPausedWas: false,
+      lastDpsCheckWave: 0,
+      log: [],
+      player: makeLane("player"),
+      ai: makeLane("ai"),
+      lastThreat: "Stable"
+    };
+    s.ai.lives = diff.aiLives;
+    return s;
+  }
+
+  function difficulty() {
+    return difficultyDefs[(state && state.difficulty) || pendingDifficulty] || difficultyDefs.normal;
+  }
+
+  function isAttackTowerType(type) {
+    return Boolean(towerDefs[type] && towerDefs[type].attackTower);
+  }
+
+  function isAttackTower(tower) {
+    return Boolean(tower && (tower.attackSlot !== null && tower.attackSlot !== undefined));
+  }
+
+  function selectedBuildInfo() {
+    return randomBuildDefs[state.selectedBuild] || randomBuildDefs.randomDefense;
+  }
+
+  function selectedBuildLabel() {
+    return selectedBuildInfo().name;
+  }
+
+  function weightedRandom(pool) {
+    let total = pool.reduce((sum, e) => sum + e.weight, 0);
+    let roll = Math.random() * total;
+    for (const entry of pool) {
+      roll -= entry.weight;
+      if (roll <= 0) return entry.type;
+    }
+    return pool[pool.length - 1].type;
+  }
+
+  function rollRandomTower(category) {
+    if (category === "assaultDefense") return weightedRandom(defensiveAssaultRandomPool);
+    if (category === "assaultOffense") return weightedRandom(offensiveAssaultRandomPool);
+    return weightedRandom(defenseRandomPool);
+  }
+
+  function attackSlotCenter(lane, slot) {
+    const startX = lane.boardX + (COLS / 2 - ATTACK_SLOTS / 2) * CELL + CELL / 2;
+    return { x: startX + slot * CELL, y: ATTACK_SLOT_Y };
+  }
+
+  function getTowerAtAttackSlot(lane, slot) {
+    return lane.towers.find(t => isAttackTower(t) && t.attackSlot === slot && !t.cloneTemp) || null;
+  }
+
+  function attackSlotAt(x, y) {
+    for (const lane of [state.player, state.ai]) {
+      for (let slot = 0; slot < ATTACK_SLOTS; slot++) {
+        const p = attackSlotCenter(lane, slot);
+        if (Math.hypot(x - p.x, y - p.y) <= 23) return { lane, slot, tower: getTowerAtAttackSlot(lane, slot) };
+      }
+    }
+    return null;
+  }
+
+  function opposingLane(lane) {
+    return lane.side === "player" ? state.ai : state.player;
+  }
+
+  function hitTowerAtPoint(lane, x, y) {
+    return lane.towers
+      .filter(t => !t.cloneTemp || t.cloneExpires > 0)
+      .find(t => Math.hypot(x - t.x, y - t.y) <= 22 + t.grade) || null;
+  }
+
+  function towerHealthBonusPct(tower) {
+    if (!tower || !tower.itemIds || !state || !state.inventory) return 0;
+    return (tower.itemIds || []).reduce((sum, id) => {
+      const item = state.inventory.find(i => i.id === id);
+      return sum + (item ? (itemDefs[item.key].effects.healthPct || 0) : 0);
+    }, 0);
+  }
+
+  function towerMaxHp(tower) {
+    const def = towerDefs[tower.type];
+    const base = isAttackTower(tower) ? 85 : 115;
+    return Math.round(base * (1 + (tower.grade - 1) * 0.42 + (tower.level - 1) * 0.16) * (1 + towerHealthBonusPct(tower)));
+  }
+
+  function refreshTowerHp(tower) {
+    const oldMax = tower.maxHp || towerMaxHp(tower);
+    const oldPct = oldMax > 0 ? (tower.hp || oldMax) / oldMax : 1;
+    tower.maxHp = towerMaxHp(tower);
+    tower.hp = Math.max(1, Math.round(tower.maxHp * Math.min(1, oldPct)));
+  }
+
+  function addFloatingText(lane, x, y, text, color = "#fca5a5") {
+    lane.floaters.push({ x, y, text, color, time: 0.95, life: 0.95 });
+  }
+
+  function init() {
+    renderPassiveChoices();
+    state = newState(null);
+    addStarterTowers();
+    bindEvents();
+    renderAll();
+    requestAnimationFrame(loop);
+  }
+
+  function addStarterTowers() {
+    state.player.towers.length = 0;
+    state.ai.towers.length = 0;
+    const diff = difficulty();
+    const basePlan = [
+      ["volt", 3, 2], ["mortar", 6, 5], ["cryo", 5, 2]
+    ];
+    const extraPlan = [
+      ["relay", 7, 3], ["volt", 2, 2], ["cryo", 6, 1], ["mortar", 3, 5],
+      ["blade", 8, 5], ["venom", 4, 2]
+    ];
+    for (const [type, c, r] of basePlan) addTower(state.ai, type, c, r, true);
+    for (let i = 0; i < diff.aiStarterExtra && i < extraPlan.length; i++) {
+      const [type, c, r] = extraPlan[i];
+      addTower(state.ai, type, c, r, true);
+    }
+    for (const tower of state.ai.towers) { tower.level = Math.min(MAX_LEVEL, diff.aiStarterLevel || 1); refreshTowerHp(tower); }
+  }
+
+  function startRun(passiveKey, difficultyKey = pendingDifficulty) {
+    pendingDifficulty = difficultyKey;
+    state = newState(passiveKey, difficultyKey);
+    addStarterTowers();
+    if (passiveKey === "keepsake") addItem(randomItemKey(1));
+    el.startModal.classList.remove("show");
+    el.prepModal.classList.add("show");
+    const diff = difficulty();
+    log(`${passives[passiveKey].name} selected on ${diff.name} difficulty.`);
+    setMessage(`Preparation phase. Build before Wave 1, then press Ready.`);
+    uiDirty = true;
+  }
+
+  function renderPassiveChoices() {
+    if (el.difficultyGrid) {
+      el.difficultyGrid.innerHTML = Object.entries(difficultyDefs).map(([key, d]) => `
+        <div class="passive ${pendingDifficulty === key ? "selected" : ""}" data-difficulty="${key}">
+          <strong>${d.name} · ${d.badge}</strong>
+          <span>${d.desc}</span>
+        </div>
+      `).join("");
+    }
+    el.passiveGrid.innerHTML = Object.entries(passives).map(([key, p]) => `
+      <div class="passive" data-passive="${key}">
+        <strong>${p.name}</strong>
+        <span>${p.desc}</span>
+      </div>
+    `).join("");
+  }
+
+  function bindEvents() {
+    document.getElementById("pauseBtn").addEventListener("click", () => {
+      if (!state.running || state.gameOver) return;
+      state.paused = !state.paused;
+      document.getElementById("pauseBtn").textContent = state.paused ? "Resume" : "Pause";
+      setMessage(state.paused ? "Paused." : "Resumed.");
+    });
+
+    document.getElementById("startWaveBtn").addEventListener("click", () => {
+      if (!state.running || state.gameOver) return;
+      requestNextWave();
+    });
+
+    document.getElementById("newGameBtn").addEventListener("click", () => {
+      state = newState(null, pendingDifficulty);
+      addStarterTowers();
+      renderPassiveChoices();
+      el.startModal.classList.add("show");
+      el.vendorModal.classList.remove("show");
+      el.prepModal.classList.remove("show");
+      setMessage("Choose a difficulty and passive to begin.");
+      uiDirty = true;
+    });
+
+    if (el.difficultyGrid) {
+      el.difficultyGrid.addEventListener("click", e => {
+        const card = e.target.closest("[data-difficulty]");
+        if (!card) return;
+        pendingDifficulty = card.dataset.difficulty;
+        renderPassiveChoices();
+        const d = difficultyDefs[pendingDifficulty] || difficultyDefs.normal;
+        setMessage(`Difficulty set to ${d.name}. Choose a passive to begin.`);
+      });
+    }
+
+    el.passiveGrid.addEventListener("click", e => {
+      const card = e.target.closest("[data-passive]");
+      if (card) startRun(card.dataset.passive, pendingDifficulty);
+    });
+
+    canvas.addEventListener("click", onCanvasClick);
+    canvas.addEventListener("contextmenu", onCanvasRightClick);
+
+    el.towerCards.addEventListener("click", e => {
+      const card = e.target.closest("[data-tower]");
+      if (!card || card.classList.contains("locked")) return;
+      state.selectedBuild = card.dataset.tower;
+      state.mode = "build";
+      state.portalTarget = null;
+      const choice = selectedBuildInfo();
+      const assault = choice.category === "assaultDefense" || choice.category === "assaultOffense";
+      setMessage(`${choice.name} selected. ${assault ? "Click one of the 5 red assault slots." : "Click an empty non-path field tile."}`);
+      uiDirty = true;
+    });
+
+    el.queuedTab.addEventListener("click", () => setContractTab("queued"));
+    el.directTab.addEventListener("click", () => setContractTab("direct"));
+
+    el.contractCards.addEventListener("click", e => {
+      const card = e.target.closest("[data-contract]");
+      if (!card) return;
+      buyContract(activeContractTab, card.dataset.contract);
+    });
+
+    el.selectedPanel.addEventListener("click", e => {
+      const action = e.target.closest("[data-action]");
+      if (!action) return;
+      handleInspectorAction(action.dataset.action, action.dataset.arg);
+    });
+
+    document.getElementById("closeItemModal").addEventListener("click", closeItemModal);
+    document.getElementById("unequipSlotBtn").addEventListener("click", () => {
+      const tower = getSelectedTower();
+      if (!tower || modalSlot === null) return;
+      tower.itemIds[modalSlot] = null;
+      refreshTowerHp(tower);
+      closeItemModal();
+      uiDirty = true;
+    });
+
+    document.getElementById("closeVendorModal").addEventListener("click", closeVendorShop);
+
+    el.itemList.addEventListener("click", e => {
+      const card = e.target.closest("[data-item-id]");
+      if (!card) return;
+      equipItem(card.dataset.itemId, modalSlot);
+    });
+
+    el.vendorList.addEventListener("click", e => {
+      const button = e.target.closest("[data-vendor-buy]");
+      if (!button) return;
+      buyVendorOffer(Number(button.dataset.vendorBuy));
+    });
+
+    el.prepReadyBtn.addEventListener("click", () => {
+      if (!state.running || state.gameOver) return;
+      state.prepPending = false;
+      el.prepModal.classList.remove("show");
+      requestNextWave(true);
+    });
+
+    el.prepContinueBtn.addEventListener("click", () => {
+      el.prepModal.classList.remove("show");
+      setMessage("Preparation phase remains active. Press Ready or Start Next Wave when you are done placing towers.");
+    });
+
+    el.gambleBtn.addEventListener("click", gambleForItem);
+  }
+
+  function hasPlacedPlayerTowers() {
+    return state && state.player && state.player.towers.some(t => !t.cloneTemp);
+  }
+
+  function gambleCost() {
+    if (!state) return 0;
+    return Math.ceil(28 + state.wave * 4 + state.gambleAttempts * 3);
+  }
+
+  function gambleForItem() {
+    if (!state.running || state.gameOver) return;
+    if (!hasPlacedPlayerTowers()) return setMessage("Place at least one tower before gambling.");
+    const cost = gambleCost();
+    if (state.gold < cost) return setMessage(`Need ${formatCost(cost)} to gamble.`);
+    state.gold -= cost;
+    state.gambleAttempts += 1;
+    if (Math.random() < 0.25) {
+      const key = randomItemKey(Math.max(1, state.wave));
+      const item = addItem(key);
+      const def = itemDefs[key];
+      showLootPopup([item], "Gamble hit!", `You won ${def.name}.`);
+      log(`Gamble succeeded: ${def.name}.`);
+    } else {
+      setMessage("Gamble failed. No item this time.");
+      log("Gamble failed.");
+    }
+    uiDirty = true;
+  }
+
+  function setContractTab(tab) {
+    activeContractTab = tab;
+    el.queuedTab.classList.toggle("active", tab === "queued");
+    el.directTab.classList.toggle("active", tab === "direct");
+    uiDirty = true;
+  }
+
+  function loop(now) {
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    if (state.running && !state.paused && !state.gameOver) update(dt);
+    draw();
+    renderFrameHud();
+    if (uiDirty) renderAll();
+    requestAnimationFrame(loop);
+  }
+
+  function update(dt) {
+    if (!state.prepPending && !state.waveInProgress) state.nextWave -= dt;
+    state.replaceCd = Math.max(0, state.replaceCd - dt);
+
+    for (const lane of [state.player, state.ai]) {
+      lane.leakedFlash = Math.max(0, lane.leakedFlash - dt);
+      for (const t of lane.towers) {
+        t.cooldown = Math.max(0, t.cooldown - dt);
+        t.freezeTimer = Math.max(0, (t.freezeTimer || 0) - dt);
+        t.slowedTimer = Math.max(0, (t.slowedTimer || 0) - dt);
+        if (t.portalCd) t.portalCd = Math.max(0, t.portalCd - dt);
+        if (t.repairCd) t.repairCd = Math.max(0, t.repairCd - dt);
+        if (t.cloneExpires) t.cloneExpires -= dt;
+      }
+      updateTemporaryTowers(lane);
+      updateBlizzardZones(lane, dt);
+      updateTentacles(lane, dt);
+      updateBeams(lane, dt);
+      updateEnemies(lane, dt);
+      updateTowers(lane, dt);
+      cleanupLane(lane);
+    }
+
+    if (state.waveInProgress && !hasWaveUnitsAlive()) completeWave();
+    if (!state.prepPending && !state.waveInProgress && state.nextWave <= 0) startWave();
+    maybeAIBuild(dt);
+    checkEnd();
+  }
+
+  function requestNextWave(fromPrep = false) {
+    if (state.prepPending) {
+      if (!fromPrep) { el.prepModal.classList.add("show"); setMessage("Wave 1 is waiting. Click Ready when your setup is prepared."); }
+      return;
+    }
+    if (state.waveInProgress || hasWaveUnitsAlive()) {
+      setMessage("Next wave is locked until all current wave units are gone.");
+      return;
+    }
+    startWave();
+  }
+
+  function hasWaveUnitsAlive() {
+    return state.player.enemies.length > 0 || state.ai.enemies.length > 0;
+  }
+
+  function completeWave() {
+    state.waveInProgress = false;
+    state.nextWave = Math.max(16, BASE_WAVE_INTERVAL - Math.floor((state.wave + 1) / 6));
+    log(`Wave ${state.wave} cleared. Next wave is available.`);
+    setMessage(`Wave ${state.wave} cleared. You can build, gamble, send pressure, or start the next wave.`);
+    uiDirty = true;
+  }
+
+  function startWave() {
+    if (!state.running || state.gameOver) return;
+    if (state.prepPending) { el.prepModal.classList.add("show"); return; }
+    if (state.waveInProgress || hasWaveUnitsAlive()) return setMessage("A wave is already running. Clear all current units first.");
+    state.waveInProgress = true;
+    state.wave += 1;
+    const w = state.wave;
+    const diff = difficulty();
+    state.nextWave = Math.max(16, BASE_WAVE_INTERVAL - Math.floor(w / 6));
+    spawnWave(state.player, w, "neutral", diff.playerWavePower);
+    maybeSpawnVendor(w);
+    spawnWave(state.ai, w, "neutral", diff.aiNeutralPower);
+    flushQueues();
+    aiActForWave(w);
+
+    const clearBonus = 25 + Math.floor(w * 5.5);
+    state.gold += clearBonus;
+    state.aiGold += Math.ceil((28 + w * 4.4) * diff.aiEconomy);
+    state.gold = Math.round(state.gold);
+    state.aiGold = Math.round(state.aiGold);
+    if (w % 5 === 0) {
+      log(`Wave ${w}: Boss DPS check. Kill it before it enrages.`);
+      setMessage(`Boss wave ${w}. Your damage and item setup are being tested.`);
+    } else {
+      setMessage(`Wave ${w} launched. Scaling is now ${Math.round(waveScale(w) * 100)}%.`);
+    }
+    uiDirty = true;
+  }
+
+  function maybeSpawnVendor(w) {
+    const chance = Math.min(1, state.vendorChance);
+    if (Math.random() < chance) {
+      const delay = 2.4 + Math.random() * 4.4;
+      spawnEnemy(state.player, "vendor", w, "vendor", delay, Math.max(0.75, waveScale(w) * 0.72));
+      state.vendorChance = 0.10;
+      log(`A Traveling Vendor entered wave ${w}. Kill it to open the shop.`);
+    } else {
+      state.vendorChance = Math.min(1, state.vendorChance + 0.10);
+    }
+  }
+
+  function waveScale(w) {
+    return Math.pow(1.19, w - 1) * (1 + Math.max(0, w - 10) * 0.055 + Math.max(0, w - 20) * 0.09);
+  }
+
+  function spawnWave(lane, w, source, sidePower = 1) {
+    const scale = waveScale(w) * sidePower;
+    let delay = 0;
+    const isBoss = w % 5 === 0;
+    const count = Math.floor(8 + w * 2.8 + Math.floor(w / 4) * 4);
+
+    if (isBoss) {
+      const escort = 7 + Math.floor(w * 0.9);
+      for (let i = 0; i < escort; i++) {
+        const type = i % 3 === 0 ? "runner" : i % 3 === 1 ? "skitter" : "brute";
+        spawnEnemy(lane, type, w, source, delay, scale * 0.68);
+        delay += 0.38;
+      }
+      spawnEnemy(lane, "boss", w, source, delay + 0.7, scale);
+      for (let i = 0; i < Math.floor(w / 2); i++) {
+        spawnEnemy(lane, i % 2 ? "runner" : "splitter", w, source, delay + 2.5 + i * 0.34, scale * 0.8);
+      }
+      return;
+    }
+
+    for (let i = 0; i < count; i++) {
+      let type = "skitter";
+      if (w >= 2 && i % 4 === 0) type = "runner";
+      if (w >= 4 && i % 7 === 0) type = "brute";
+      if (w >= 7 && i % 6 === 2) type = "splitter";
+      if (w >= 12 && i % 11 === 5) type = "brute";
+      spawnEnemy(lane, type, w, source, delay, scale);
+      delay += Math.max(0.16, 0.52 - w * 0.012);
+    }
+  }
+
+  function spawnEnemy(lane, type, wave, source = "neutral", delay = 0, power = 1) {
+    const def = waveEnemyDefs[type] || auraEnemyDefs[type];
+    if (!def) return;
+    const bossBoost = def.boss ? 1.15 + Math.floor(wave / 5) * 0.18 : 1;
+    const hp = Math.round(def.hp * power * bossBoost);
+    const enemy = {
+      id: uid("enemy"), type, name: def.name, source, boss: Boolean(def.boss), vendor: Boolean(def.vendor), healBurst: Boolean(def.healBurst), aura: def.aura || null,
+      hp, maxHp: hp, speed: def.speed * (1 + Math.max(0, wave - 10) * 0.006), reward: Math.max(0, Math.round(def.reward * (1 + wave * 0.04))), xp: def.xp,
+      color: def.color, radius: def.radius, armor: def.armor || 0, split: Boolean(def.split),
+      progress: 0, spawnDelay: delay, slowTimer: 0, slowFactor: 1, stunTimer: 0, vulnTimer: 0, vulnPct: 0,
+      movementMult: 1, teleports: {}, poisons: [], beamTick: 0, bossAge: 0, enraged: false, wobble: Math.random() * Math.PI * 2
+    };
+    lane.enemies.push(enemy);
+  }
+
+  function flushQueues() {
+    const diff = difficulty();
+    for (const c of state.playerQueue) {
+      const def = contractDefs.queued[c.key];
+      for (let i = 0; i < def.count; i++) spawnEnemy(state.ai, def.unit, state.wave, "player", i * 0.28, waveScale(state.wave) * def.power * diff.aiIncomingPower);
+    }
+    state.playerQueue.length = 0;
+
+    for (const c of state.aiQueue) {
+      const def = contractDefs.queued[c.key] || { unit: "runner", count: 3, power: 0.8 };
+      for (let i = 0; i < def.count; i++) spawnEnemy(state.player, def.unit, state.wave, "ai", i * 0.32, waveScale(state.wave) * def.power * diff.aiPressure);
+    }
+    state.aiQueue.length = 0;
+  }
+
+  function buyContract(tab, key) {
+    const def = contractDefs[tab][key];
+    if (!def || state.gold < def.cost || state.gameOver) return;
+    const diff = difficulty();
+    state.gold -= def.cost;
+    if (state.passive === "pressure") state.gold += Math.ceil(def.cost * 0.16);
+    state.gold = Math.round(state.gold);
+    if (tab === "queued") {
+      state.playerQueue.push({ key });
+      log(`Queued ${def.name} for the AI's next wave.`);
+    } else {
+      for (let i = 0; i < def.count; i++) spawnEnemy(state.ai, def.unit, state.wave || 1, "player", i * 0.25, Math.max(1, waveScale(Math.max(1, state.wave)) * 0.88 * diff.aiIncomingPower));
+      log(`Sent direct ${def.name} to disrupt the AI lane.`);
+    }
+    uiDirty = true;
+  }
+
+  function aiActForWave(w) {
+    const diff = difficulty();
+    const pressureScore = (35 + w * 12) * diff.aiPressure;
+    if (w >= 2) state.aiQueue.push({ key: w % 3 === 0 ? "bulwarks" : "raiders" });
+    if (w >= 5 && diff.aiPressure >= 1.25 && w % 2 === 1) state.aiQueue.push({ key: "raiders" });
+    if (w >= 7 && w % 2 === 0) state.aiQueue.push({ key: "splitters" });
+    if (w >= 10 && diff.aiPressure >= 1.60) state.aiQueue.push({ key: w % 3 === 0 ? "bulwarks" : "splitters" });
+    if (w >= 4) {
+      const directTypes = ["drummer", "jammer", "aegis"];
+      const picks = Math.min(5, Math.max(1, Math.floor((1 + Math.floor(w / 8)) * diff.aiPressure)));
+      for (let i = 0; i < picks; i++) {
+        const unit = directTypes[(w + i) % directTypes.length];
+        spawnEnemy(state.player, unit, w, "ai", i * 0.55, Math.max(1, waveScale(w) * 0.62 * diff.aiPressure));
+      }
+      state.lastThreat = pressureScore > 230 ? "Extreme" : pressureScore > 170 ? "High" : "Rising";
+    }
+  }
+
+  function maybeAIBuild() {
+    const diff = difficulty();
+    if (state.aiGold < 5 || state.ai.towers.length > 24) return;
+    const buildPlan = [
+      ["volt", 6, 2], ["mortar", 4, 6], ["relay", 5, 5], ["cryo", 7, 6], ["volt", 2, 2],
+      ["mortar", 3, 5], ["cryo", 6, 1], ["relay", 7, 3], ["volt", 5, 7], ["mortar", 1, 6],
+      ["venom", 4, 2], ["blade", 8, 5], ["volt", 1, 3], ["cryo", 2, 6], ["relay", 6, 6],
+      ["venom", 7, 1], ["mortar", 8, 3], ["blade", 6, 7], ["shield", 5, 1], ["tentacle", 4, 5], ["repair", 7, 5],
+      ["dart", 0, -1], ["towerSlow", 1, -1], ["repair", 2, -1], ["healer", 3, -1], ["blizzard", 4, -1], ["clone", 0, -1], ["shield", 4, -1]
+    ];
+    const availablePlan = state.wave < 5 ? buildPlan.filter(([type, c, r]) => r >= 0) : buildPlan;
+    const targetCount = Math.min(availablePlan.length, Math.floor((3 + Math.floor(state.wave / 2)) * diff.aiBuildRate));
+    while (state.ai.towers.length < targetCount && state.aiGold >= 5) {
+      const [type, c, r] = availablePlan[state.ai.towers.length];
+      const cost = Math.max(4, Math.ceil(towerDefs[type].cost * 0.85));
+      if (state.aiGold < cost) break;
+      state.aiGold -= cost;
+      const added = addTower(state.ai, type, c, r, true);
+      if (!added) { state.aiGold += cost; break; }
+    }
+    const trainBudget = Math.max(4, Math.ceil(5 / diff.aiBuildRate));
+    for (const tower of state.ai.towers) {
+      if (state.aiGold >= trainBudget && tower.level < 3) {
+        state.aiGold -= trainBudget;
+        tower.level++;
+        refreshTowerHp(tower);
+      }
+    }
+    state.aiGold = Math.round(state.aiGold);
+  }
+
+  function addTower(lane, type, col, row, free = false) {
+    const def = towerDefs[type];
+    if (!def) return null;
+    if (lane.side === "player" && !free && state.gold < def.cost) return null;
+    const attackTower = isAttackTowerType(type) && !(def.dualPlace && row >= 0);
+    if (attackTower) {
+      const slot = Math.max(0, Math.min(ATTACK_SLOTS - 1, col));
+      if (getTowerAtAttackSlot(lane, slot)) return null;
+      col = slot;
+      row = -1;
+    } else if (getTowerAtCell(lane, col, row)) {
+      return null;
+    }
+    if (!free && lane.side === "player") state.gold -= def.cost;
+    const pos = attackTower ? attackSlotCenter(lane, col) : cellCenter(lane, col, row);
+    const tower = {
+      id: uid("tower"), type, col, row, attackSlot: attackTower ? col : null, x: pos.x, y: pos.y, level: 1, grade: 1, xp: 0, kills: 0, totalDamage: 0,
+      cooldown: 0, repairCd: 0, freezeTimer: 0, slowedTimer: 0, focusTowerId: null, cloneTemp: false, cloneExpires: 0,
+      itemIds: [null], portalA: null, portalB: null, portalCd: 0
+    };
+    tower.maxHp = towerMaxHp(tower);
+    tower.hp = tower.maxHp;
+    lane.towers.push(tower);
+    return tower;
+  }
+
+  function buildTowerAt(col, row) {
+    if (!state.running || state.gameOver) return;
+    const lane = state.player;
+    const choice = selectedBuildInfo();
+    if (choice.category === "assaultDefense" || choice.category === "assaultOffense") return setMessage("Assault rolls use the 5 red assault slots below your lane.");
+    if (lane.pathSet.has(`${col},${row}`)) return setMessage("Build denied: path cells are reserved for enemies and portals.");
+    if (getTowerAtCell(lane, col, row)) return selectTower(getTowerAtCell(lane, col, row));
+    if (state.gold < choice.cost) return setMessage(`Need ${formatCost(choice.cost)} for ${choice.name}.`);
+    const type = rollRandomTower("defense");
+    state.gold -= choice.cost;
+    const t = addTower(lane, type, col, row, true);
+    if (!t) { state.gold += choice.cost; return setMessage("That tile cannot accept the rolled tower. Try another tile."); }
+    if (choice.elite) { t.level = MAX_LEVEL; t.xp = 0; refreshTowerHp(t); }
+    selectTower(t);
+    log(`${choice.name} created ${choice.elite ? "level 3 " : ""}${towerDefs[type].name}.`);
+    setMessage(`Rolled ${towerDefs[type].name}${choice.elite ? " at level 3" : ""}.`);
+    uiDirty = true;
+  }
+
+  function buildAttackTowerAt(slot) {
+    if (!state.running || state.gameOver) return;
+    const lane = state.player;
+    const choice = selectedBuildInfo();
+    const existing = getTowerAtAttackSlot(lane, slot);
+    if (existing) return selectTower(existing);
+    if (state.wave < 5) return setMessage("Assault towers unlock after wave 5.");
+    if (choice.category !== "assaultDefense" && choice.category !== "assaultOffense") return setMessage("Defense rolls use the normal grid. Pick a defensive or offensive assault roll to use assault slots.");
+    if (state.gold < choice.cost) return setMessage(`Need ${formatCost(choice.cost)} for ${choice.name}.`);
+    const type = rollRandomTower(choice.category);
+    state.gold -= choice.cost;
+    const t = addTower(lane, type, slot, -1, true);
+    if (!t) { state.gold += choice.cost; return setMessage("That assault slot is already occupied."); }
+    if (choice.elite) { t.level = MAX_LEVEL; t.xp = 0; refreshTowerHp(t); }
+    selectTower(t);
+    log(`${choice.name} created ${choice.elite ? "level 3 " : ""}${towerDefs[type].name}.`);
+    setMessage(`Rolled assault tower: ${towerDefs[type].name}${choice.elite ? " at level 3" : ""}.`);
+    uiDirty = true;
+  }
+
+  function getTowerAtCell(lane, col, row) {
+    return lane.towers.find(t => !isAttackTower(t) && t.col === col && t.row === row) || null;
+  }
+
+  function selectTower(tower) {
+    state.selectedTowerId = tower ? tower.id : null;
+    state.mode = "select";
+    state.portalTarget = null;
+    uiDirty = true;
+  }
+
+  function getSelectedTower() {
+    if (!state.selectedTowerId) return null;
+    return state.player.towers.find(t => t.id === state.selectedTowerId) || null;
+  }
+
+  function onCanvasClick(e) {
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+    for (const r of slotHitRects) {
+      if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) {
+        openItemModal(r.slot);
+        return;
+      }
+    }
+
+    const selectedForTarget = getSelectedTower();
+    const slotHit = attackSlotAt(x, y);
+    if (slotHit) {
+      if (slotHit.lane.side === "player" && state.mode === "relocate" && selectedForTarget && isAttackTower(selectedForTarget)) {
+        relocateAttackTowerTo(selectedForTarget, slotHit.slot);
+        return;
+      }
+      if (slotHit.lane.side !== "player") {
+        if (selectedForTarget && isAttackTower(selectedForTarget) && slotHit.tower) {
+          selectedForTarget.focusTowerId = slotHit.tower.id;
+          setMessage(`${towerDefs[selectedForTarget.type].name} is now focusing ${towerDefs[slotHit.tower.type].name}.`);
+          uiDirty = true;
+        } else {
+          setMessage("Enemy assault slots can be targeted by selecting one of your assault towers, then clicking an enemy tower.");
+        }
+        return;
+      }
+      buildAttackTowerAt(slotHit.slot);
+      return;
+    }
+
+    const lane = laneAt(x, y);
+    if (!lane) return;
+    const col = Math.floor((x - lane.boardX) / CELL);
+    const row = Math.floor((y - lane.boardY) / CELL);
+    if (col < 0 || row < 0 || col >= COLS || row >= ROWS) return;
+
+    if (lane.side !== "player") {
+      const selectedAttack = getSelectedTower();
+      if (selectedAttack && isAttackTower(selectedAttack)) {
+        const targetTower = hitTowerAtPoint(lane, x, y);
+        if (targetTower) {
+          selectedAttack.focusTowerId = targetTower.id;
+          setMessage(`${towerDefs[selectedAttack.type].name} will focus ${towerDefs[targetTower.type].name}.`);
+          uiDirty = true;
+        } else {
+          setMessage("Click an enemy tower or assault slot to focus your selected assault tower.");
+        }
+        return;
+      }
+      setMessage("The AI mirror lane is hostile territory. Send contracts from the command center.");
+      return;
+    }
+
+    const selected = getSelectedTower();
+    if (state.mode === "relocate" && selected) {
+      relocateTowerTo(selected, col, row);
+      return;
+    }
+    if (state.mode === "portal" && selected && selected.type === "portal") {
+      setPortalCell(selected, col, row);
+      return;
+    }
+
+    const existing = getTowerAtCell(lane, col, row);
+    if (existing) selectTower(existing);
+    else buildTowerAt(col, row);
+  }
+
+  function onCanvasRightClick(e) {
+    e.preventDefault();
+    if (!state.running || state.gameOver) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+    const slotHit = attackSlotAt(x, y);
+    const selectedAttack = getSelectedTower();
+    if (slotHit && selectedAttack && isAttackTower(selectedAttack) && slotHit.lane.side !== "player" && slotHit.tower) {
+      selectedAttack.focusTowerId = slotHit.tower.id;
+      setMessage(`${towerDefs[selectedAttack.type].name} focus set to ${towerDefs[slotHit.tower.type].name}.`);
+      uiDirty = true;
+      return;
+    }
+    const lane = laneAt(x, y);
+    if (lane && lane.side !== "player" && selectedAttack && isAttackTower(selectedAttack)) {
+      const targetTower = hitTowerAtPoint(lane, x, y);
+      if (targetTower) {
+        selectedAttack.focusTowerId = targetTower.id;
+        setMessage(`${towerDefs[selectedAttack.type].name} focus set to ${towerDefs[targetTower.type].name}.`);
+        uiDirty = true;
+      }
+      return;
+    }
+    if (!lane || lane.side !== "player") return;
+    const hit = lane.enemies
+      .filter(enemy => enemy.spawnDelay <= 0)
+      .map(enemy => ({ enemy, p: enemyPos(lane, enemy) }))
+      .find(({ enemy, p }) => Math.hypot(x - p.x, y - p.y) <= enemy.radius + 10);
+    if (hit) {
+      lane.focusEnemyId = hit.enemy.id;
+      setMessage(`Focus fire locked on ${hit.enemy.name}. Towers in range will prioritize it.`);
+    } else {
+      lane.focusEnemyId = null;
+      setMessage("Focus fire cleared.");
+    }
+    uiDirty = true;
+  }
+
+  function laneAt(x, y) {
+    for (const lane of [state.player, state.ai]) {
+      if (x >= lane.boardX && x < lane.boardX + BOARD_W && y >= lane.boardY && y < lane.boardY + BOARD_H) return lane;
+    }
+    return null;
+  }
+
+  function setPortalCell(tower, col, row) {
+    const lane = state.player;
+    const pos = cellCenter(lane, col, row);
+    if (!lane.pathSet.has(`${col},${row}`)) return setMessage("Teleport fields must be placed on path cells.");
+    if (Math.hypot(pos.x - tower.x, pos.y - tower.y) > towerStats(tower, lane).range) return setMessage("That portal field is outside the Teleport Gate range.");
+    if (state.portalTarget === "A") tower.portalA = { col, row, x: pos.x, y: pos.y };
+    if (state.portalTarget === "B") tower.portalB = { col, row, x: pos.x, y: pos.y };
+    setMessage(`Portal ${state.portalTarget} configured. Teleport cooldown is ${PORTAL_CD}s per gate.`);
+    state.mode = "select";
+    state.portalTarget = null;
+    uiDirty = true;
+  }
+
+  function handleInspectorAction(action, arg) {
+    const tower = getSelectedTower();
+    if (!tower) return;
+    const lane = state.player;
+    if (action === "train") trainTower(tower);
+    if (action === "merge") mergeTower(tower);
+    if (action === "replace") replaceTower(tower);
+    if (action === "sell") sellTower(tower);
+    if (action === "portalA" || action === "portalB") {
+      state.mode = "portal";
+      state.portalTarget = action === "portalA" ? "A" : "B";
+      setMessage(`Click a path cell inside this tower's range to set Portal ${state.portalTarget}.`);
+    }
+    if (action === "slot") openItemModal(Number(arg));
+    uiDirty = true;
+  }
+
+  function trainTower(tower) {
+    if (tower.level >= MAX_LEVEL) return setMessage("This tower is level capped. Merge it with another level 3 tower of the same kind.");
+    const cost = trainCost(tower);
+    if (state.gold < cost) return setMessage(`Need ${formatCost(cost)} to train this tower.`);
+    state.gold -= cost;
+    tower.level += 1;
+    tower.xp = 0;
+    refreshTowerHp(tower);
+    log(`${towerDefs[tower.type].name} trained to level ${tower.level}.`);
+  }
+
+  function trainCost(tower) {
+    return Math.ceil((24 + tower.grade * 12) * tower.level * (1 + state.wave * 0.03));
+  }
+
+  function mergeTower(tower) {
+    if (tower.level < MAX_LEVEL) return setMessage("Only level 3 towers can merge.");
+    if (tower.grade >= MAX_GRADE) return setMessage("This tower is already at the highest merge grade.");
+    const partner = state.player.towers.find(t => !t.cloneTemp && t.id !== tower.id && t.type === tower.type && t.grade === tower.grade && t.level === MAX_LEVEL);
+    if (!partner) return setMessage("Need another level 3 tower of the same kind and grade to merge.");
+    const cost = Math.ceil(55 * tower.grade * (1 + state.wave * 0.04));
+    if (state.gold < cost) return setMessage(`Need ${formatCost(cost)} to merge.`);
+    state.gold -= cost;
+    const survivorItems = [...tower.itemIds, ...partner.itemIds].filter(Boolean);
+    state.player.towers = state.player.towers.filter(t => t.id !== partner.id);
+    tower.grade += 1;
+    tower.level = 1;
+    tower.xp = 0;
+    refreshTowerHp(tower);
+    tower.itemIds = new Array(slotsForTower(tower)).fill(null);
+    survivorItems.slice(0, tower.itemIds.length).forEach((id, i) => tower.itemIds[i] = id);
+    log(`Merged into Grade ${roman(tower.grade)} ${towerDefs[tower.type].name}.`);
+  }
+
+  function replaceTower(tower) {
+    if (state.replaceCd > 0) return setMessage(`Relocation is cooling down for ${state.replaceCd.toFixed(1)}s.`);
+    state.mode = "relocate";
+    state.relocatingTowerId = tower.id;
+    setMessage(`Relocating ${towerDefs[tower.type].name}. Click an empty non-path tile to move it as-is.`);
+  }
+
+  function relocateTowerTo(tower, col, row) {
+    const lane = state.player;
+    if (state.replaceCd > 0) return setMessage(`Relocation is cooling down for ${state.replaceCd.toFixed(1)}s.`);
+    if (isAttackTower(tower) && !towerDefs[tower.type].dualPlace) return setMessage("That assault tower can only relocate to another assault slot.");
+    if (lane.pathSet.has(`${col},${row}`)) return setMessage("Relocation denied: choose a non-path tile.");
+    const occupied = getTowerAtCell(lane, col, row);
+    if (occupied && occupied.id !== tower.id) return setMessage("Relocation denied: that tile already has a tower.");
+    const pos = cellCenter(lane, col, row);
+    tower.col = col;
+    tower.row = row;
+    tower.attackSlot = null;
+    tower.x = pos.x;
+    tower.y = pos.y;
+    if (tower.type === "portal") {
+      const st = towerStats(tower, lane);
+      const portalAValid = tower.portalA && Math.hypot(tower.portalA.x - tower.x, tower.portalA.y - tower.y) <= st.range;
+      const portalBValid = tower.portalB && Math.hypot(tower.portalB.x - tower.x, tower.portalB.y - tower.y) <= st.range;
+      if (!portalAValid || !portalBValid) { tower.portalA = null; tower.portalB = null; }
+    }
+    state.replaceCd = REPLACE_CD;
+    state.mode = "select";
+    state.relocatingTowerId = null;
+    log(`${towerDefs[tower.type].name} relocated.`);
+    setMessage("Tower relocated as-is. Cooldown started.");
+  }
+
+  function relocateAttackTowerTo(tower, slot) {
+    const lane = state.player;
+    if (!isAttackTower(tower)) return setMessage("Only assault towers can relocate to assault slots.");
+    if (state.replaceCd > 0) return setMessage(`Relocation is cooling down for ${state.replaceCd.toFixed(1)}s.`);
+    const occupied = getTowerAtAttackSlot(lane, slot);
+    if (occupied && occupied.id !== tower.id) return setMessage("Relocation denied: that assault slot is occupied.");
+    const pos = attackSlotCenter(lane, slot);
+    tower.attackSlot = slot;
+    tower.col = slot;
+    tower.row = -1;
+    tower.x = pos.x;
+    tower.y = pos.y;
+    state.replaceCd = REPLACE_CD;
+    state.mode = "select";
+    state.relocatingTowerId = null;
+    log(`${towerDefs[tower.type].name} relocated to assault slot ${slot + 1}.`);
+    setMessage("Assault tower relocated as-is. Cooldown started.");
+  }
+
+  function sellTower(tower) {
+    const refund = Math.max(1, Math.ceil(towerDefs[tower.type].cost * 0.42 * tower.grade));
+    for (const id of tower.itemIds) {
+      const item = state.inventory.find(i => i.id === id);
+      if (item) item.equippedTowerId = null;
+    }
+    state.gold += refund;
+    state.player.towers = state.player.towers.filter(t => t.id !== tower.id);
+    state.selectedTowerId = null;
+    log(`Sold tower for ${refund} gold.`);
+  }
+
+  function slotsForTower(tower) {
+    return Math.min(3, 1 + Math.floor(tower.grade / 2));
+  }
+
+  function updateEnemies(lane, dt) {
+    const leaked = [];
+    for (const enemy of lane.enemies) {
+      if (enemy.spawnDelay > 0) { enemy.spawnDelay -= dt; continue; }
+      processPoison(lane, enemy, dt);
+      if (enemy.hp <= 0 || !lane.enemies.includes(enemy)) continue;
+      if (enemy.boss) {
+        enemy.bossAge += dt;
+        if (!enemy.enraged && enemy.bossAge > 18) {
+          enemy.enraged = true;
+          enemy.speed *= 1.48;
+          enemy.color = "#ef4444";
+          if (lane.side === "player") log("Boss enraged: DPS check failed. It is now much faster.");
+        }
+      }
+      enemy.slowTimer = Math.max(0, enemy.slowTimer - dt);
+      enemy.stunTimer = Math.max(0, enemy.stunTimer - dt);
+      enemy.vulnTimer = Math.max(0, enemy.vulnTimer - dt);
+      if (enemy.vulnTimer <= 0) enemy.vulnPct = 0;
+      if (enemy.stunTimer > 0) continue;
+
+      let mult = enemy.movementMult;
+      if (enemy.slowTimer > 0) mult *= enemy.slowFactor;
+      mult *= enemyAuraSpeed(lane, enemy);
+      mult *= itemEnemySlowAura(lane, enemy);
+      enemy.progress += enemy.speed * mult * dt;
+      handlePortals(lane, enemy);
+      if (enemy.progress >= lane.pathLength) leaked.push(enemy);
+    }
+
+    for (const enemy of leaked) {
+      lane.enemies = lane.enemies.filter(e => e.id !== enemy.id);
+      if (lane.focusEnemyId === enemy.id) lane.focusEnemyId = null;
+      if (enemy.vendor) {
+        if (lane.side === "player") log("The Traveling Vendor escaped before you could stop it.");
+        continue;
+      }
+      lane.lives -= 1;
+      lane.leakedFlash = 0.7;
+      if (lane.side === "ai" && state.passive === "pressure") state.gold += 2;
+      if (lane.side === "player") setMessage(`Leak! ${enemy.name} reached your core. Lives -1.`);
+      else setMessage(`AI leaked ${enemy.name}. Keep the pressure up.`);
+    }
+  }
+
+  function processPoison(lane, enemy, dt) {
+    if (!enemy.poisons || !enemy.poisons.length) return;
+    const pos = enemyPos(lane, enemy);
+    enemy.poisons = enemy.poisons.filter(stack => {
+      stack.time -= dt;
+      const tower = lane.towers.find(t => t.id === stack.towerId) || null;
+      dealDamage(lane, enemy, stack.dps * dt, tower, pos);
+      return stack.time > 0 && enemy.hp > 0;
+    });
+  }
+
+  function enemyAuraSpeed(lane, enemy) {
+    let mult = 1;
+    for (const other of lane.enemies) {
+      if (other === enemy || other.spawnDelay > 0) continue;
+      const pos = enemyPos(lane, enemy);
+      const otherPos = enemyPos(lane, other);
+      const d = Math.hypot(pos.x - otherPos.x, pos.y - otherPos.y);
+      if (other.aura === "haste" && d < 115) mult *= 1.28;
+    }
+    return mult;
+  }
+
+  function itemEnemySlowAura(lane, enemy) {
+    let mult = 1;
+    const pos = enemyPos(lane, enemy);
+    for (const tower of lane.towers) {
+      for (const item of equippedItems(tower)) {
+        const e = itemDefs[item.key].effects;
+        if (e.auraEnemySlowPct && Math.hypot(pos.x - tower.x, pos.y - tower.y) <= e.auraRange) mult *= (1 - e.auraEnemySlowPct);
+      }
+    }
+    return mult;
+  }
+
+  function handlePortals(lane, enemy) {
+    for (const tower of lane.towers) {
+      if (tower.type !== "portal" || !tower.portalA || !tower.portalB || tower.portalCd > 0 || enemy.spawnDelay > 0) continue;
+      const p = enemyPos(lane, enemy);
+      if (Math.hypot(p.x - tower.portalA.x, p.y - tower.portalA.y) > 18) continue;
+      const used = enemy.teleports[tower.id] || 0;
+      if (used >= 3) continue;
+      const targetProgress = nearestProgressToPoint(lane, tower.portalB.x, tower.portalB.y);
+      enemy.progress = targetProgress;
+      enemy.teleports[tower.id] = used + 1;
+      enemy.movementMult *= 1.5;
+      tower.portalCd = PORTAL_CD;
+      lane.effects.push({ type: "portal", x: tower.portalB.x, y: tower.portalB.y, time: 0.65, color: towerDefs.portal.color });
+      if (lane.side === "player") setMessage("Teleport triggered. The enemy is displaced but permanently accelerated.");
+    }
+  }
+
+  function updateTowers(lane, dt) {
+    for (const tower of [...lane.towers]) {
+      if (!lane.towers.includes(tower)) continue;
+      if ((tower.hp || 1) <= 0) continue;
+      const def = towerDefs[tower.type];
+      const stats = towerStats(tower, lane);
+      if (tower.freezeTimer > 0) continue;
+      if (tower.cooldown > 0) continue;
+
+      if (def.support === "shield") {
+        continue;
+      }
+
+      if (def.assault === "repair" || def.support === "repair") {
+        const repaired = repairAlliedTower(lane, tower, stats);
+        if (repaired) tower.cooldown = TOWER_REPAIR_CD;
+        continue;
+      }
+
+      if (def.assault === "healer") {
+        const healed = healWaveUnits(lane, tower, stats);
+        if (healed) tower.cooldown = Math.max(3.2, 1 / Math.max(0.05, stats.attackSpeed));
+        continue;
+      }
+
+      if (def.assault === "blizzard") {
+        const casted = castBlizzard(lane, tower, stats);
+        if (casted) tower.cooldown = 10.5 / Math.max(0.4, tower.level * 0.35 + tower.grade * 0.25);
+        continue;
+      }
+
+      if (def.assault === "clone") {
+        const cloned = activateCloneTower(lane, tower);
+        if (cloned) tower.cooldown = 14;
+        continue;
+      }
+
+      if (isAttackTower(tower) && def.assault !== "healer" && def.assault !== "blizzard") {
+        const targets = findTowerTargets(lane, tower, stats, 1 + stats.extraTargets);
+        if (!targets.length) continue;
+        tower.cooldown = 1 / Math.max(0.05, stats.attackSpeed);
+        fireAssaultTower(lane, tower, targets, stats);
+        continue;
+      }
+
+      const targets = findTargets(lane, tower, stats.range, 1 + stats.extraTargets);
+      if (!targets.length) continue;
+      tower.cooldown = 1 / stats.attackSpeed;
+      fireTower(lane, tower, targets, stats);
+    }
+  }
+
+  function findTowerTargets(lane, tower, stats, count) {
+    const enemyLane = opposingLane(lane);
+    let candidates = enemyLane.towers
+      .filter(t => (t.hp || 0) > 0 && (!t.cloneTemp || t.cloneExpires > 0))
+      .filter(t => Math.hypot(t.x - tower.x, t.y - tower.y) <= stats.range);
+    if (tower.focusTowerId) {
+      const focused = candidates.find(t => t.id === tower.focusTowerId);
+      if (focused) return [focused, ...candidates.filter(t => t.id !== focused.id)].slice(0, count);
+      if (!enemyLane.towers.some(t => t.id === tower.focusTowerId)) tower.focusTowerId = null;
+    }
+    if (towerDefs[tower.type].assault === "dart") candidates = shuffle(candidates);
+    else candidates = candidates.sort((a, b) => (a.hp / a.maxHp) - (b.hp / b.maxHp));
+    return candidates.slice(0, count);
+  }
+
+  function fireAssaultTower(lane, tower, targets, stats) {
+    const def = towerDefs[tower.type];
+    const enemyLane = opposingLane(lane);
+    for (let i = 0; i < targets.length; i++) {
+      const target = targets[i];
+      const dmg = i === 0 ? stats.damage : stats.damage * 0.62;
+      const arc = def.assault === "slow";
+      lane.shots.push({ x1: tower.x, y1: tower.y, x2: target.x, y2: target.y, color: def.color, time: arc ? 0.42 : 0.16, width: arc ? 3 : 1.5, arc });
+      damageTower(enemyLane, target, dmg, tower, def.assault === "slow" ? "freeze" : "hit");
+      applyTowerOnHit(enemyLane, tower, target, stats);
+      if (stats.splashRadius > 0) splashTowerDamage(enemyLane, target, dmg * (stats.splashPct || 0.32), stats.splashRadius, tower);
+    }
+  }
+
+  function repairAlliedTower(lane, tower, stats) {
+    const targets = lane.towers
+      .filter(t => (t.hp || 0) < (t.maxHp || 1) && Math.hypot(t.x - tower.x, t.y - tower.y) <= stats.range)
+      .sort((a, b) => (a.hp / a.maxHp) - (b.hp / b.maxHp))
+      .slice(0, 3);
+    if (!targets.length) return false;
+    const amount = Math.ceil((54 + tower.level * 22 + tower.grade * 18) * (1 + stats.aura.damagePct));
+    for (const target of targets) {
+      target.hp = Math.min(target.maxHp, Math.round((target.hp || target.maxHp) + amount));
+      lane.shots.push({ x1: tower.x, y1: tower.y, x2: target.x, y2: target.y, color: towerDefs.repair.color, time: 0.24, width: 2.5 });
+      addFloatingText(lane, target.x, target.y - 30, `+${amount}`, "#86efac");
+    }
+    return true;
+  }
+
+  function healWaveUnits(lane, tower, stats) {
+    const enemyLane = opposingLane(lane);
+    const source = lane.side;
+    const targets = enemyLane.enemies
+      .filter(e => e.source === source && e.spawnDelay <= 0 && e.hp < e.maxHp && Math.hypot(enemyPos(enemyLane, e).x - tower.x, enemyPos(enemyLane, e).y - tower.y) <= stats.range)
+      .sort((a, b) => (a.hp / a.maxHp) - (b.hp / b.maxHp))
+      .slice(0, 3);
+    if (!targets.length) return false;
+    const amount = Math.ceil(28 + tower.level * 11 + tower.grade * 8);
+    for (const target of targets) {
+      const p = enemyPos(enemyLane, target);
+      target.hp = Math.min(target.maxHp, target.hp + amount);
+      lane.shots.push({ x1: tower.x, y1: tower.y, x2: p.x, y2: p.y, color: towerDefs.healer.color, time: 0.24, width: 2.2 });
+      enemyLane.effects.push({ type: "heal", x: p.x, y: p.y, r: 38, time: 0.45, color: "#86efac" });
+      addFloatingText(enemyLane, p.x, p.y - 22, `+${amount}`, "#86efac");
+    }
+    return true;
+  }
+
+  function castBlizzard(lane, tower, stats) {
+    const targets = lane.enemies
+      .filter(e => e.spawnDelay <= 0)
+      .map(e => ({ e, p: enemyPos(lane, e) }))
+      .filter(({ p }) => Math.hypot(p.x - tower.x, p.y - tower.y) <= stats.range)
+      .sort((a, b) => b.e.progress - a.e.progress);
+    if (!targets.length) return false;
+    const target = targets[0];
+    const r = 70 + tower.grade * 8;
+    const duration = 4.4 + tower.level * 0.45;
+    const dps = Math.max(2, stats.damage * 0.75);
+    lane.effects.push({ type: "blizzard", x: target.p.x, y: target.p.y, r, time: duration, life: duration, color: towerDefs.blizzard.color, dps, slowPct: 0.32 + tower.grade * 0.03 });
+    lane.shots.push({ x1: tower.x, y1: tower.y, x2: target.p.x, y2: target.p.y, color: towerDefs.blizzard.color, time: 0.48, width: 3, arc: true });
+    addFloatingText(lane, target.p.x, target.p.y - 30, "BLIZZARD", "#bfdbfe");
+    return true;
+  }
+
+  function activateCloneTower(lane, tower) {
+    const candidates = lane.towers.filter(t => t.id !== tower.id && !t.cloneTemp && towerDefs[t.type].assault !== "clone" && Math.hypot(t.x - tower.x, t.y - tower.y) <= towerStats(tower, lane).range);
+    if (!candidates.length) return false;
+    const source = candidates[Math.floor(Math.random() * candidates.length)];
+    const empty = [];
+    for (let i = 0; i < ATTACK_SLOTS; i++) if (!getTowerAtAttackSlot(lane, i)) empty.push(i);
+    let pos, slot = null;
+    if (empty.length) { slot = empty[Math.floor(Math.random() * empty.length)]; pos = attackSlotCenter(lane, slot); }
+    else { pos = { x: tower.x + (Math.random() - 0.5) * 72, y: tower.y - 46 - Math.random() * 26 }; }
+    const clone = {
+      id: uid("tower"), type: source.type, col: slot !== null ? slot : tower.col, row: -1, attackSlot: slot, x: pos.x, y: pos.y, level: source.level, grade: source.grade, xp: 0, kills: 0, totalDamage: 0,
+      cooldown: 0, repairCd: 0, freezeTimer: 0, slowedTimer: 0, focusTowerId: source.focusTowerId || null, cloneTemp: true, cloneExpires: 12 + tower.grade * 2,
+      itemIds: [...source.itemIds], portalA: null, portalB: null, portalCd: 0
+    };
+    clone.maxHp = Math.ceil(towerMaxHp(clone) * 0.55);
+    clone.hp = clone.maxHp;
+    lane.towers.push(clone);
+    lane.effects.push({ type: "clone", x: clone.x, y: clone.y, time: 0.7, color: towerDefs.clone.color });
+    addFloatingText(lane, clone.x, clone.y - 28, "CLONE", "#e9d5ff");
+    return true;
+  }
+
+  function updateTemporaryTowers(lane) {
+    const before = lane.towers.length;
+    lane.towers = lane.towers.filter(t => (!t.cloneTemp || t.cloneExpires > 0) && (t.hp || 1) > 0);
+    if (before !== lane.towers.length && lane.side === "player" && state.selectedTowerId && !lane.towers.some(t => t.id === state.selectedTowerId)) state.selectedTowerId = null;
+  }
+
+  function towerArmorAura(lane, target) {
+    let armor = 0;
+    for (const tower of lane.towers) {
+      if (tower.type !== "shield" || tower.id === target.id || (tower.hp || 0) <= 0) continue;
+      const range = 132 + tower.grade * 12;
+      if (Math.hypot(tower.x - target.x, tower.y - target.y) <= range) armor += 0.18 + tower.grade * 0.04 + tower.level * 0.02;
+    }
+    return Math.min(0.58, armor);
+  }
+
+  function damageTower(lane, tower, raw, attacker = null, mode = "hit") {
+    if (!tower || (tower.hp || 0) <= 0) return;
+    const armorPct = towerArmorAura(lane, tower);
+    let dmg = Math.max(1, Math.round(raw * (1 - armorPct)));
+    if (attacker && state.passive === "hunter" && lane.side === "ai") dmg = Math.ceil(dmg * 1.04);
+    tower.hp = Math.max(0, Math.round((tower.hp || tower.maxHp) - dmg));
+    if (attacker) attacker.totalDamage += dmg;
+    addFloatingText(lane, tower.x, tower.y - 30, `-${dmg}`, mode === "freeze" ? "#bfdbfe" : "#fca5a5");
+    if (mode === "freeze") tower.freezeTimer = Math.max(tower.freezeTimer || 0, 1.15 + (attacker ? attacker.grade * 0.25 : 0));
+    lane.effects.push({ type: mode === "freeze" ? "freezeTower" : "towerHit", x: tower.x, y: tower.y, time: 0.42, color: mode === "freeze" ? "#93c5fd" : "#fca5a5" });
+    if (tower.hp <= 0) {
+      if (lane.side === "player" && !tower.cloneTemp) {
+        for (const id of tower.itemIds || []) {
+          const item = state.inventory.find(i => i.id === id);
+          if (item) item.equippedTowerId = null;
+        }
+      }
+      lane.towers = lane.towers.filter(t => t.id !== tower.id);
+      if (lane.side === "player" && state.selectedTowerId === tower.id) state.selectedTowerId = null;
+      addFloatingText(lane, tower.x, tower.y - 8, "BROKEN", "#fecaca");
+    }
+  }
+
+  function applyTowerOnHit(lane, attacker, target, stats) {
+    for (const item of equippedItems(attacker)) {
+      const e = itemDefs[item.key].effects;
+      if (e.stunChance && Math.random() < e.stunChance) target.freezeTimer = Math.max(target.freezeTimer || 0, e.stunDur || 0.35);
+      if (e.slowPct) target.slowedTimer = Math.max(target.slowedTimer || 0, e.slowDur || 1.1);
+    }
+  }
+
+  function splashTowerDamage(lane, primary, dmg, radius, attacker) {
+    for (const t of lane.towers) {
+      if (t.id === primary.id) continue;
+      if (Math.hypot(t.x - primary.x, t.y - primary.y) <= radius) damageTower(lane, t, dmg, attacker);
+    }
+  }
+
+  function shuffle(arr) {
+    const copy = [...arr];
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  }
+
+  function findTargets(lane, tower, range, count) {
+    const candidates = lane.enemies
+      .filter(e => e.spawnDelay <= 0 && Math.hypot(enemyPos(lane, e).x - tower.x, enemyPos(lane, e).y - tower.y) <= range)
+      .sort((a, b) => b.progress - a.progress);
+    if (lane.side === "player" && lane.focusEnemyId) {
+      const focused = candidates.find(e => e.id === lane.focusEnemyId);
+      if (focused) return [focused, ...candidates.filter(e => e.id !== focused.id)].slice(0, count);
+      if (!lane.enemies.some(e => e.id === lane.focusEnemyId)) lane.focusEnemyId = null;
+    }
+    return candidates.slice(0, count);
+  }
+
+  function fireTower(lane, tower, targets, stats) {
+    const def = towerDefs[tower.type];
+    for (let i = 0; i < targets.length; i++) {
+      const target = targets[i];
+      const pos = enemyPos(lane, target);
+      const dmg = i === 0 ? stats.damage : stats.damage * 0.72;
+      dealDamage(lane, target, dmg, tower, pos);
+      applyOnHit(lane, tower, target, stats);
+      if (tower.type === "tentacle") spawnTentacle(lane, tower, pos.x, pos.y, 0);
+      lane.shots.push({ x1: tower.x, y1: tower.y, x2: pos.x, y2: pos.y, color: def.color, time: 0.13, width: 2 + tower.grade * 0.4 });
+      if (stats.splashRadius > 0) splashDamage(lane, target, pos, stats.damage * stats.splashPct, stats.splashRadius, tower);
+    }
+
+    if (tower.type === "volt" && tower.grade >= 2 && targets[0]) {
+      const primary = targets[0];
+      const p = enemyPos(lane, primary);
+      const chained = lane.enemies.find(e => e.id !== primary.id && e.spawnDelay <= 0 && Math.hypot(enemyPos(lane, e).x - p.x, enemyPos(lane, e).y - p.y) <= 82);
+      if (chained) {
+        const cp = enemyPos(lane, chained);
+        dealDamage(lane, chained, stats.damage * (tower.grade >= 3 ? 0.72 : 0.46), tower, cp);
+        lane.shots.push({ x1: p.x, y1: p.y, x2: cp.x, y2: cp.y, color: "#7dd3fc", time: 0.18, width: 1.6 });
+      }
+    }
+
+    if (tower.type === "cryo" && tower.level >= 3 && Math.random() < 0.16) {
+      for (const target of targets) target.stunTimer = Math.max(target.stunTimer, 0.42);
+    }
+  }
+
+  function dealDamage(lane, enemy, raw, tower, pos) {
+    if (!enemy || enemy.hp <= 0) return;
+    let dmg = raw;
+    if (enemy.armor) dmg *= (1 - enemy.armor);
+    if (enemy.shielded || nearbyShield(lane, enemy)) dmg *= 0.78;
+    dmg *= 1 + enemy.vulnPct;
+    if (state.passive === "hunter" && enemy.boss && lane.side === "player") dmg *= 1.12;
+    enemy.hp -= dmg;
+    if (tower) tower.totalDamage += dmg;
+    if (enemy.hp <= 0) killEnemy(lane, enemy, tower, pos);
+  }
+
+  function nearbyShield(lane, enemy) {
+    const pos = enemyPos(lane, enemy);
+    return lane.enemies.some(e => e.aura === "shield" && e.spawnDelay <= 0 && Math.hypot(enemyPos(lane, e).x - pos.x, enemyPos(lane, e).y - pos.y) < 105);
+  }
+
+  function applyOnHit(lane, tower, enemy, stats) {
+    if (tower.type === "cryo") applySlow(enemy, 0.42 + tower.grade * 0.04, 1.35 + tower.level * 0.15);
+    if (tower.type === "venom") applyPoison(lane, tower, enemy, stats.poisonDps, stats.poisonDur);
+    if (tower.type === "mortar" && tower.grade >= 3) enemy.vulnPct = Math.max(enemy.vulnPct, 0.10), enemy.vulnTimer = Math.max(enemy.vulnTimer, 1.5);
+    for (const item of equippedItems(tower)) {
+      const e = itemDefs[item.key].effects;
+      if (e.slowPct) applySlow(enemy, e.slowPct, e.slowDur || 1.1);
+      if (e.stunChance && Math.random() < e.stunChance) enemy.stunTimer = Math.max(enemy.stunTimer, e.stunDur || 0.35);
+    }
+  }
+
+  function applySlow(enemy, pct, dur) {
+    enemy.slowFactor = Math.min(enemy.slowFactor, 1 - pct);
+    enemy.slowTimer = Math.max(enemy.slowTimer, dur);
+  }
+
+  function applyPoison(lane, tower, enemy, dps, dur) {
+    if (!dps || !dur || !enemy) return;
+    if (!enemy.poisons) enemy.poisons = [];
+    const existing = enemy.poisons.find(p => p.towerId === tower.id);
+    if (existing) {
+      existing.dps = Math.max(existing.dps, dps);
+      existing.time = Math.max(existing.time, dur);
+    } else {
+      enemy.poisons.push({ towerId: tower.id, dps, time: dur });
+    }
+    enemy.color = enemy.boss ? enemy.color : "#a3e635";
+  }
+
+  function splashDamage(lane, primary, center, dmg, radius, tower) {
+    lane.effects.push({ type: "splash", x: center.x, y: center.y, r: radius, time: 0.25, color: towerDefs[tower.type].color });
+    for (const e of lane.enemies) {
+      if (e.id === primary.id || e.spawnDelay > 0) continue;
+      const p = enemyPos(lane, e);
+      if (Math.hypot(p.x - center.x, p.y - center.y) <= radius) dealDamage(lane, e, dmg, tower, p);
+    }
+  }
+
+  function killEnemy(lane, enemy, tower, pos) {
+    lane.enemies = lane.enemies.filter(e => e.id !== enemy.id);
+    if (lane.focusEnemyId === enemy.id) lane.focusEnemyId = null;
+    if (lane.side === "player") state.gold += Math.round(enemy.reward);
+    if (tower) {
+      tower.kills++;
+      grantXp(tower, enemy.xp, lane);
+    }
+    lane.effects.push({ type: "death", x: pos.x, y: pos.y, time: 0.35, color: enemy.color });
+    if (enemy.healBurst) livingBombHeal(lane, enemy, pos);
+    if (enemy.split && enemy.type === "splitter") {
+      for (let i = 0; i < 2; i++) spawnEnemy(lane, "skitter", state.wave, enemy.source, i * 0.1, Math.max(0.65, waveScale(Math.max(1, state.wave)) * 0.42));
+    }
+    if (enemy.vendor && lane.side === "player") openVendorShop();
+    if (enemy.boss && lane.side === "player") {
+      bossDrop(enemy);
+      if (state.wave > 0 && state.wave % 10 === 0) runLaneDpsCheck(enemy);
+    }
+  }
+
+  function livingBombHeal(lane, enemy, pos) {
+    const radius = 92;
+    const amount = Math.max(35, Math.round(enemy.maxHp * 0.18));
+    let healed = 0;
+    for (const other of lane.enemies) {
+      if (other.id === enemy.id || other.spawnDelay > 0) continue;
+      const p = enemyPos(lane, other);
+      if (Math.hypot(p.x - pos.x, p.y - pos.y) <= radius) {
+        other.hp = Math.min(other.maxHp, other.hp + amount);
+        healed++;
+      }
+    }
+    lane.effects.push({ type: "heal", x: pos.x, y: pos.y, r: radius, time: 0.45, color: "#86efac" });
+    if (healed) addFloatingText(lane, pos.x, pos.y - 22, `+${amount} x${healed}`, "#86efac");
+  }
+
+  function runLaneDpsCheck(enemy) {
+    if (state.lastDpsCheckWave === state.wave) return;
+    state.lastDpsCheckWave = state.wave;
+    const defense = state.player.towers.filter(t => !isAttackTower(t));
+    const assault = state.player.towers.filter(t => isAttackTower(t));
+    const laneDps = defense.reduce((sum, t) => sum + towerStats(t, state.player).dps, 0);
+    const assaultDps = assault.reduce((sum, t) => sum + towerStats(t, state.player).dps, 0);
+    const recommended = Math.round(42 * Math.pow(1.22, state.wave - 1));
+    const ratio = laneDps / Math.max(1, recommended);
+    const rating = ratio >= 1.35 ? "Dominant" : ratio >= 1.0 ? "Passed" : ratio >= 0.72 ? "Barely holding" : "Underpowered";
+    const color = ratio >= 1 ? "#86efac" : "#fca5a5";
+    log(`Wave ${state.wave} DPS audit: ${Math.round(laneDps)} lane DPS, ${Math.round(assaultDps)} assault DPS. ${rating}.`);
+    showInfoPopup("Lane DPS audit complete", `Wave ${state.wave} post-boss check: ${rating}.`, [
+      ["Lane DPS", Math.round(laneDps)],
+      ["Expected DPS", recommended],
+      ["Assault DPS", Math.round(assaultDps)],
+      ["Score", `${Math.round(ratio * 100)}%`]
+    ], color);
+  }
+
+  function showInfoPopup(title, subtitle, rows = [], accent = "#38bdf8") {
+    const body = rows.map(([k, v]) => `<div class="loot-item"><div class="loot-icon" style="color:${accent}">◆</div><div><div class="loot-name">${k}</div><div class="loot-rarity">${v}</div></div></div>`).join("");
+    el.lootToasts.innerHTML = `<div class="loot-popup" style="border-color:${accent}"><h2>${title}</h2><p>${subtitle}</p><div class="loot-items">${body}</div></div>`;
+    el.lootToasts.classList.add("show");
+    clearTimeout(lootPopupTimer);
+    lootPopupTimer = setTimeout(() => { el.lootToasts.classList.remove("show"); el.lootToasts.innerHTML = ""; }, 5200);
+  }
+
+  function grantXp(tower, xp, lane) {
+    if (tower.level >= MAX_LEVEL) {
+      if (state.passive === "resonant" && lane.side === "player") {
+        const receivers = lane.towers.filter(t => t.id !== tower.id && t.level < MAX_LEVEL && Math.hypot(t.x - tower.x, t.y - tower.y) <= 150);
+        if (receivers.length) receivers.forEach(t => addXp(t, xp / receivers.length));
+      }
+      return;
+    }
+    addXp(tower, xp);
+  }
+
+  function addXp(tower, xp) {
+    tower.xp += xp;
+    while (tower.level < MAX_LEVEL && tower.xp >= xpNeeded(tower)) {
+      tower.xp -= xpNeeded(tower);
+      tower.level++;
+      refreshTowerHp(tower);
+      if (state.player.towers.includes(tower)) log(`${towerDefs[tower.type].name} reached level ${tower.level}.`);
+    }
+    if (tower.level >= MAX_LEVEL) tower.xp = Math.min(tower.xp, xpNeeded(tower));
+  }
+
+  function xpNeeded(tower) {
+    return 24 * tower.level * tower.grade;
+  }
+
+  function bossDrop(enemy) {
+    const wave = Math.max(5, state.wave);
+    let drops = 1 + Math.floor(wave / 10);
+    if (state.passive === "hunter") drops += 1;
+    drops = Math.min(4, drops);
+    const gained = [];
+    for (let i = 0; i < drops; i++) {
+      const key = randomItemKey(wave);
+      const item = addItem(key);
+      gained.push(item);
+    }
+    const names = gained.map(item => itemDefs[item.key].name);
+    log(`Boss defeated. Loot: ${names.join(", ")}.`);
+    setMessage(`Boss dropped ${gained.length} item${gained.length === 1 ? "" : "s"}: ${names.join(", ")}.`);
+    showLootPopup(gained);
+  }
+
+  function randomItemKey(wave) {
+    const pool = [];
+    for (const [key, item] of Object.entries(itemDefs)) {
+      let weight = item.rarity === "common" ? 38 : item.rarity === "rare" ? 28 : item.rarity === "epic" ? 15 : 4;
+      if (wave >= 15 && item.rarity === "legendary") weight += 4;
+      if (wave >= 25 && item.rarity === "legendary") weight += 7;
+      for (let i = 0; i < weight; i++) pool.push(key);
+    }
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  function addItem(key) {
+    const item = { id: uid("item"), key, equippedTowerId: null };
+    state.inventory.push(item);
+    return item;
+  }
+
+  let lootPopupTimer = null;
+  function showLootPopup(items, title = "Boss loot acquired", subtitle = "New equipment has been added to your inventory.") {
+    if (!items || !items.length || !el.lootToasts) return;
+    const rows = items.map(item => {
+      const def = itemDefs[item.key];
+      return `<div class="loot-item"><div class="loot-icon">${def.icon}</div><div><div class="loot-name rarity-${def.rarity}">${def.name}</div><div class="loot-rarity">${def.rarity} item acquired</div></div></div>`;
+    }).join("");
+    el.lootToasts.innerHTML = `<div class="loot-popup"><h2>${title}</h2><p>${subtitle}</p><div class="loot-items">${rows}</div></div>`;
+    el.lootToasts.classList.add("show");
+    clearTimeout(lootPopupTimer);
+    lootPopupTimer = setTimeout(() => {
+      el.lootToasts.classList.remove("show");
+      el.lootToasts.innerHTML = "";
+    }, 4200);
+  }
+
+  function vendorItemPrice(key) {
+    const rarity = itemDefs[key].rarity;
+    const base = rarity === "common" ? 4 : rarity === "rare" ? 7 : rarity === "epic" ? 12 : 21;
+    const variance = rarity === "common" ? 2 : rarity === "rare" ? 3 : rarity === "epic" ? 5 : 9;
+    return Math.ceil(base + Math.random() * variance + state.wave * (rarity === "legendary" ? 0.32 : 0.16));
+  }
+
+  function randomVendorItemKey(exclude = new Set()) {
+    const wave = Math.max(1, state.wave);
+    const pool = [];
+    for (const [key, item] of Object.entries(itemDefs)) {
+      if (exclude.has(key)) continue;
+      let weight = item.rarity === "common" ? 42 : item.rarity === "rare" ? 28 : item.rarity === "epic" ? 10 : 1;
+      if (wave >= 10 && item.rarity === "epic") weight += 6;
+      if (wave >= 12 && item.rarity === "legendary") weight += 3;
+      if (wave >= 20 && item.rarity === "legendary") weight += 5;
+      for (let i = 0; i < weight; i++) pool.push(key);
+    }
+    return pool[Math.floor(Math.random() * pool.length)] || "quickGear";
+  }
+
+  function openVendorShop() {
+    const used = new Set();
+    state.vendorOffers = [];
+    const offerCount = state.passive === "seller" ? 6 : 3;
+    for (let i = 0; i < offerCount; i++) {
+      const key = randomVendorItemKey(used);
+      used.add(key);
+      state.vendorOffers.push({ key, price: vendorItemPrice(key) });
+    }
+    state.vendorPausedWas = state.paused;
+    state.paused = true;
+    document.getElementById("pauseBtn").textContent = "Resume";
+    el.vendorSub.textContent = `The wave is paused. Vendor chance reset to ${Math.round(state.vendorChance * 100)}%. ${state.passive === "seller" ? "Big Seller expanded this shop to 6 offers." : "Buy one item or leave."}`;
+    renderVendorOffers();
+    el.vendorModal.classList.add("show");
+    log("Vendor defeated. Shop opened.");
+    setMessage("Vendor shop opened. Combat is paused while you choose.");
+  }
+
+  function renderVendorOffers() {
+    el.vendorList.innerHTML = state.vendorOffers.map((offer, i) => {
+      const def = itemDefs[offer.key];
+      const canBuy = state.gold >= offer.price;
+      return `<div class="item-card vendor-offer free">
+        <div class="card-head"><div class="card-title rarity-${def.rarity}">${def.icon} ${def.name}</div><div class="card-price">${def.rarity}</div></div>
+        <div class="card-meta">${def.desc}</div>
+        <div class="buy-line"><span class="vendor-price">${offer.price}g</span><button class="primary compact" data-vendor-buy="${i}" ${canBuy ? "" : "disabled"}>Buy</button></div>
+      </div>`;
+    }).join("");
+  }
+
+  function buyVendorOffer(index) {
+    const offer = state.vendorOffers[index];
+    if (!offer) return;
+    if (state.gold < offer.price) return setMessage(`Need ${offer.price}g for ${itemDefs[offer.key].name}.`);
+    state.gold -= offer.price;
+    const item = addItem(offer.key);
+    showLootPopup([item], "Vendor purchase", "Purchased equipment has been added to your inventory.");
+    log(`Bought ${itemDefs[offer.key].name} from the vendor for ${offer.price}g.`);
+    closeVendorShop();
+  }
+
+  function closeVendorShop() {
+    el.vendorModal.classList.remove("show");
+    state.paused = state.vendorPausedWas;
+    document.getElementById("pauseBtn").textContent = state.paused ? "Resume" : "Pause";
+    state.vendorOffers = [];
+    uiDirty = true;
+  }
+
+  function equippedItems(tower) {
+    if (!tower) return [];
+    return tower.itemIds.map(id => state.inventory.find(item => item.id === id)).filter(Boolean);
+  }
+
+  function openItemModal(slotIndex) {
+    const tower = getSelectedTower();
+    if (!tower) return;
+    modalSlot = slotIndex;
+    el.itemModalSub.textContent = `Equip slot ${slotIndex + 1} on ${towerDefs[tower.type].name}. Green means currently equipped; dark means available.`;
+    renderItemModal();
+    el.itemModal.classList.add("show");
+  }
+
+  function closeItemModal() {
+    el.itemModal.classList.remove("show");
+    modalSlot = null;
+    uiDirty = true;
+  }
+
+  function equipItem(itemId, slotIndex) {
+    const tower = getSelectedTower();
+    const item = state.inventory.find(i => i.id === itemId);
+    if (!tower || !item || slotIndex === null) return;
+    for (const t of state.player.towers) {
+      t.itemIds = t.itemIds.map(id => id === itemId ? null : id);
+    }
+    const oldId = tower.itemIds[slotIndex];
+    if (oldId) {
+      const old = state.inventory.find(i => i.id === oldId);
+      if (old) old.equippedTowerId = null;
+    }
+    tower.itemIds[slotIndex] = itemId;
+    item.equippedTowerId = tower.id;
+    refreshTowerHp(tower);
+    log(`${itemDefs[item.key].name} equipped to ${towerDefs[tower.type].name}.`);
+    closeItemModal();
+  }
+
+  function renderItemModal() {
+    if (!state.inventory.length) {
+      el.itemList.innerHTML = `<div class="selected-empty">No items yet. Bosses, vendors, gambling, and the Lucky Keepsake passive can add equipment.</div>`;
+      return;
+    }
+    el.itemList.innerHTML = state.inventory.map(item => {
+      const def = itemDefs[item.key];
+      const equipped = Boolean(item.equippedTowerId);
+      const tower = state.player.towers.find(t => t.id === item.equippedTowerId);
+      return `<div class="item-card ${equipped ? "equipped" : "free"}" data-item-id="${item.id}">
+        <div class="card-head"><div class="card-title"><span class="rarity-${def.rarity}">${def.icon} ${def.name}</span></div><div class="tag">${def.rarity}</div></div>
+        <div class="card-meta">${def.desc}</div>
+        <div class="card-tags"><span class="tag">${equipped ? `Equipped: ${tower ? towerDefs[tower.type].name : "tower"}` : "Unequipped"}</span></div>
+      </div>`;
+    }).join("");
+  }
+
+  function updateBlizzardZones(lane, dt) {
+    for (const zone of lane.effects.filter(e => e.type === "blizzard")) {
+      for (const enemy of [...lane.enemies]) {
+        if (enemy.spawnDelay > 0 || enemy.hp <= 0) continue;
+        const p = enemyPos(lane, enemy);
+        if (Math.hypot(p.x - zone.x, p.y - zone.y) <= zone.r) {
+          applySlow(enemy, zone.slowPct || 0.30, 0.22);
+          dealDamage(lane, enemy, (zone.dps || 2) * dt, null, p);
+        }
+      }
+    }
+  }
+
+  function spawnTentacle(lane, tower, x, y, depth = 0) {
+    if (!lane || !tower || lane.tentacles.length > 34 || depth > 5) return;
+    lane.tentacles.push({ id: uid("tentacle"), towerId: tower.id, x, y, time: 3.0, cooldown: 0.12, attacks: 2, damage: Math.max(3, towerStats(tower, lane).damage * 0.55), range: 54 + tower.grade * 5, color: towerDefs.tentacle.color, depth });
+    lane.effects.push({ type: "tentacle", x, y, time: 0.35, color: towerDefs.tentacle.color });
+  }
+
+  function updateTentacles(lane, dt) {
+    for (const ten of [...lane.tentacles]) {
+      ten.time -= dt;
+      ten.cooldown -= dt;
+      if (ten.time <= 0 || ten.attacks <= 0) continue;
+      if (ten.cooldown > 0) continue;
+      const target = lane.enemies
+        .filter(e => e.spawnDelay <= 0 && e.hp > 0)
+        .map(e => ({ e, p: enemyPos(lane, e) }))
+        .filter(({ p }) => Math.hypot(p.x - ten.x, p.y - ten.y) <= ten.range)
+        .sort((a, b) => b.e.progress - a.e.progress)[0];
+      if (!target) continue;
+      ten.cooldown = 0.52;
+      ten.attacks -= 1;
+      const sourceTower = lane.towers.find(t => t.id === ten.towerId) || null;
+      dealDamage(lane, target.e, ten.damage, sourceTower, target.p);
+      lane.shots.push({ x1: ten.x, y1: ten.y, x2: target.p.x, y2: target.p.y, color: ten.color, time: 0.16, width: 2 });
+      if (sourceTower && Math.random() < 0.24 && ten.depth < 4) {
+        spawnTentacle(lane, sourceTower, target.p.x + (Math.random() - 0.5) * 32, target.p.y + (Math.random() - 0.5) * 32, ten.depth + 1);
+      }
+    }
+    lane.tentacles = lane.tentacles.filter(t => t.time > 0 && t.attacks > 0);
+  }
+
+  function updateBeams(lane, dt) {
+    lane.beams = [];
+    const beamTowers = lane.towers.filter(t => equippedItems(t).some(i => itemDefs[i.key].effects.beam));
+    for (let i = 0; i < beamTowers.length; i++) {
+      for (let j = i + 1; j < beamTowers.length; j++) {
+        const a = beamTowers[i], b = beamTowers[j];
+        const d = Math.hypot(a.x - b.x, a.y - b.y);
+        if (d > 230) continue;
+        lane.beams.push({ a, b, time: performance.now() });
+        for (const enemy of lane.enemies) {
+          if (enemy.spawnDelay > 0) continue;
+          const p = enemyPos(lane, enemy);
+          if (distToSegment(p.x, p.y, a.x, a.y, b.x, b.y) <= 13) {
+            applySlow(enemy, 0.20, 0.18);
+            dealDamage(lane, enemy, (9 + (a.grade + b.grade) * 2.4) * dt, null, p);
+          }
+        }
+      }
+    }
+  }
+
+  function cleanupLane(lane) {
+    lane.shots = lane.shots.filter(s => (s.time -= 0.016) > 0);
+    lane.effects = lane.effects.filter(e => (e.time -= 0.016) > 0);
+    lane.floaters = lane.floaters.filter(f => { f.time -= 0.016; f.y -= 0.28; return f.time > 0; });
+  }
+
+  function towerStats(tower, lane) {
+    const def = towerDefs[tower.type];
+    const levelMult = 1 + (tower.level - 1) * 0.36;
+    const gradeMult = 1 + (tower.grade - 1) * 0.72;
+    let damage = def.damage * levelMult * gradeMult;
+    let attackSpeed = def.attackSpeed * (1 + (tower.level - 1) * 0.06 + (tower.grade - 1) * 0.05);
+    let range = def.range + (tower.grade - 1) * 9;
+    let extraTargets = 0;
+    let splashRadius = tower.type === "mortar" ? 55 + tower.grade * 7 : 0;
+    let splashPct = tower.type === "mortar" ? 0.50 + tower.grade * 0.04 : 0;
+    let poisonDps = tower.type === "venom" ? damage * (0.58 + tower.grade * 0.12) : 0;
+    let poisonDur = tower.type === "venom" ? 3.2 + tower.grade * 0.45 : 0;
+
+    if (tower.type === "blade") {
+      if (tower.grade >= 2) extraTargets += 1;
+      if (tower.grade >= 3) extraTargets += 1;
+      range += tower.grade * 3;
+    }
+
+    if (tower.type === "relay") {
+      damage *= 0.72;
+      range += 16;
+    }
+
+    if (tower.type === "shield") {
+      damage = 0;
+      range += 10 + tower.grade * 8;
+    }
+
+    if (tower.type === "repair") {
+      damage = 0;
+      range += tower.grade * 8;
+    }
+
+    if (tower.type === "tentacle") {
+      range += tower.grade * 4;
+    }
+
+    for (const item of equippedItems(tower)) {
+      const e = itemDefs[item.key].effects;
+      if (e.damagePct) damage *= 1 + e.damagePct;
+      if (e.attackSpeedPct) attackSpeed *= 1 + e.attackSpeedPct;
+      if (e.extraTargets) extraTargets += e.extraTargets;
+      if (e.splashRadius) { splashRadius = Math.max(splashRadius, e.splashRadius); splashPct = Math.max(splashPct, e.splashPct || 0.32); }
+      if (e.poisonDpsPct) { poisonDps = Math.max(poisonDps, damage * e.poisonDpsPct); poisonDur = Math.max(poisonDur, e.poisonDur || 2.4); }
+    }
+
+    const aura = towerAuraBonuses(lane, tower);
+    damage *= 1 + aura.damagePct;
+    attackSpeed *= 1 + aura.attackSpeedPct;
+    attackSpeed *= jammerPenalty(lane, tower);
+    if ((tower.slowedTimer || 0) > 0) attackSpeed *= 0.62;
+
+    if (lane && lane.side === "ai") {
+      const diff = difficulty();
+      damage *= diff.aiDamage;
+      attackSpeed *= diff.aiAspd;
+    }
+
+    const dotDps = poisonDps > 0 ? poisonDps : 0;
+    return { damage, attackSpeed, range, dps: damage * attackSpeed * (1 + extraTargets * 0.55) + dotDps, extraTargets, splashRadius, splashPct, poisonDps, poisonDur, aura };
+  }
+
+  function towerAuraBonuses(lane, tower) {
+    let damagePct = 0, attackSpeedPct = 0;
+    for (const other of lane.towers) {
+      if (other.id === tower.id) continue;
+      const d = Math.hypot(other.x - tower.x, other.y - tower.y);
+      if (other.type === "relay") {
+        const r = 118 + other.grade * 10;
+        if (d <= r) {
+          damagePct += 0.10 + other.grade * 0.025;
+          attackSpeedPct += 0.08 + other.level * 0.015;
+        }
+      }
+      for (const item of equippedItems(other)) {
+        const e = itemDefs[item.key].effects;
+        if (e.auraDmgPct && d <= e.auraRange) damagePct += e.auraDmgPct;
+        if (e.auraAspdPct && d <= e.auraRange) attackSpeedPct += e.auraAspdPct;
+      }
+    }
+    return { damagePct: Math.min(0.75, damagePct), attackSpeedPct: Math.min(0.75, attackSpeedPct) };
+  }
+
+  function jammerPenalty(lane, tower) {
+    for (const e of lane.enemies) {
+      if (e.aura !== "jammer" || e.spawnDelay > 0) continue;
+      const p = enemyPos(lane, e);
+      if (Math.hypot(p.x - tower.x, p.y - tower.y) < 120) return 0.72;
+    }
+    return 1;
+  }
+
+  function exposedByAura(lane, enemy) {
+    const pos = enemyPos(lane, enemy);
+    let pct = 0;
+    for (const tower of lane.towers) {
+      for (const item of equippedItems(tower)) {
+        const e = itemDefs[item.key].effects;
+        if (e.auraVulnPct && Math.hypot(pos.x - tower.x, pos.y - tower.y) <= e.auraRange) pct += e.auraVulnPct;
+      }
+    }
+    return Math.min(0.4, pct);
+  }
+
+  function enemyPos(lane, enemy) {
+    return pointAt(lane, enemy.progress);
+  }
+
+  function pointAt(lane, progress) {
+    if (progress <= 0) return { ...lane.pathPoints[0] };
+    if (progress >= lane.pathLength) return { ...lane.pathPoints[lane.pathPoints.length - 1] };
+    let rem = progress;
+    for (let i = 0; i < lane.segments.length; i++) {
+      const len = lane.segments[i];
+      if (rem <= len) {
+        const a = lane.pathPoints[i], b = lane.pathPoints[i + 1];
+        const t = rem / len;
+        return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+      }
+      rem -= len;
+    }
+    return { ...lane.pathPoints[lane.pathPoints.length - 1] };
+  }
+
+  function nearestProgressToPoint(lane, x, y) {
+    let best = 0, bestDist = Infinity, accum = 0;
+    for (let i = 0; i < lane.pathPoints.length - 1; i++) {
+      const a = lane.pathPoints[i], b = lane.pathPoints[i + 1];
+      const vx = b.x - a.x, vy = b.y - a.y;
+      const len2 = vx * vx + vy * vy;
+      const t = Math.max(0, Math.min(1, ((x - a.x) * vx + (y - a.y) * vy) / len2));
+      const px = a.x + vx * t, py = a.y + vy * t;
+      const d = Math.hypot(x - px, y - py);
+      if (d < bestDist) { bestDist = d; best = accum + Math.sqrt(len2) * t; }
+      accum += Math.sqrt(len2);
+    }
+    return best;
+  }
+
+  function cellCenter(lane, col, row) {
+    return { x: lane.boardX + col * CELL + CELL / 2, y: lane.boardY + row * CELL + CELL / 2 };
+  }
+
+  function distToSegment(px, py, ax, ay, bx, by) {
+    const vx = bx - ax, vy = by - ay;
+    const wx = px - ax, wy = py - ay;
+    const c1 = vx * wx + vy * wy;
+    if (c1 <= 0) return Math.hypot(px - ax, py - ay);
+    const c2 = vx * vx + vy * vy;
+    if (c2 <= c1) return Math.hypot(px - bx, py - by);
+    const t = c1 / c2;
+    return Math.hypot(px - (ax + t * vx), py - (ay + t * vy));
+  }
+
+  function checkEnd() {
+    if (state.player.lives <= 0) {
+      state.player.lives = 0; state.gameOver = true; state.victory = false;
+      setMessage("Defeat. Your core collapsed. Try more early pressure and stronger boss itemization.");
+    }
+    if (state.ai.lives <= 0) {
+      state.ai.lives = 0; state.gameOver = true; state.victory = true;
+      setMessage("Victory. The AI mirror core collapsed under your pressure.");
+    }
+  }
+
+  function setMessage(text) { el.message.textContent = text; }
+  function log(text) {
+    state.log.unshift(`[W${state.wave || 0}] ${text}`);
+    state.log = state.log.slice(0, 9);
+    uiDirty = true;
+  }
+
+  function formatGold(value) {
+    return String(Math.round(value));
+  }
+
+  function formatCost(value) {
+    return `${Math.ceil(value)}g`;
+  }
+
+  function renderFrameHud() {
+    state.gold = Math.round(state.gold);
+    state.aiGold = Math.round(state.aiGold);
+    el.lifeText.textContent = state.player.lives;
+    el.aiLifeText.textContent = state.ai.lives;
+    el.goldText.textContent = formatGold(state.gold);
+    el.waveText.textContent = state.wave;
+    el.timerText.textContent = !state.running ? "--" : state.prepPending ? "Prep" : state.waveInProgress ? "Active" : `${Math.max(0, state.nextWave).toFixed(1)}s`;
+    const waveBtn = document.getElementById("startWaveBtn");
+    if (waveBtn) {
+      waveBtn.disabled = !state.running || state.gameOver || (!state.prepPending && (state.waveInProgress || hasWaveUnitsAlive()));
+      waveBtn.textContent = state.prepPending ? "Ready / Wave 1" : "Start Next Wave";
+    }
+    if (el.gambleBtn) {
+      const canGamble = state.running && !state.gameOver && hasPlacedPlayerTowers() && state.gold >= gambleCost();
+      el.gambleBtn.disabled = !canGamble;
+      el.gambleBtn.textContent = `🎲 Gamble Item (${formatCost(gambleCost())})`;
+    }
+    el.replaceText.textContent = state.replaceCd > 0 ? `${state.replaceCd.toFixed(1)}s` : "Ready";
+    if (el.vendorText) el.vendorText.textContent = `${Math.round(state.vendorChance * 100)}%`;
+    const assaultFocus = state.player.towers.some(t => isAttackTower(t) && t.focusTowerId);
+    el.threatText.textContent = state.player.focusEnemyId ? "Focus fire" : assaultFocus ? "Assault focus" : state.lastThreat;
+  }
+
+  function renderAll() {
+    renderTowerCards();
+    renderContractCards();
+    renderSelectedPanel();
+    renderQueue();
+    renderLog();
+    el.inventoryText.textContent = `${state.inventory.length} Item${state.inventory.length === 1 ? "" : "s"}`;
+    el.passiveText.textContent = state.passive ? passives[state.passive].short : "None";
+    if (el.difficultyText) el.difficultyText.textContent = state.difficulty ? difficulty().short : difficultyDefs[pendingDifficulty].short;
+    uiDirty = false;
+  }
+
+  function renderTowerCards() {
+    const choiceCard = (key, icon, color, tag) => {
+      const c = randomBuildDefs[key];
+      const selected = state.selectedBuild === key;
+      const assault = c.category === "assaultDefense" || c.category === "assaultOffense";
+      const locked = assault && state.wave < 5;
+      const detailTag = assault ? "Unlocks W5" : (c.elite ? "Starts L3" : "Starts L1");
+      return `<div class="tower-card ${selected ? "selected" : ""} ${assault ? "assault" : "defense"} ${locked ? "locked" : ""}" data-tower="${key}">
+        <div class="card-head"><div class="card-title" style="color:${color}">${icon} ${c.name}</div><div class="card-price">${formatCost(c.cost)}</div></div>
+        <div class="card-meta">${locked ? "Locked until wave 5. " : ""}${c.note}</div>
+        <div class="card-tags"><span class="tag">${tag}</span><span class="tag">${detailTag}</span><span class="tag">Weighted rarity</span></div>
+      </div>`;
+    };
+    const assaultActive = selectedBuildInfo().category === "assaultDefense" || selectedBuildInfo().category === "assaultOffense";
+    el.towerCards.innerHTML = `
+      <div class="tabs" style="grid-template-columns:1fr 1fr; margin-bottom:4px">
+        <button class="tab ${selectedBuildInfo().category === "defense" ? "active" : ""}" data-tower="randomDefense">Defense</button>
+        <button class="tab ${assaultActive ? "active" : ""}" data-tower="randomAssaultOffense" ${state.wave < 5 ? "disabled" : ""}>Offense</button>
+      </div>
+      <p class="setup-hint">Builds are randomized. Defense rolls use field tiles; assault rolls unlock after wave 5 and use the five bottom assault slots.</p>
+      ${choiceCard("randomDefense", "◇", "#38bdf8", "Field grid")}
+      ${choiceCard("randomDefenseElite", "◆", "#a78bfa", "Field grid")}
+      ${choiceCard("randomAssaultDefense", "⬡", "#67e8f9", "Assault support")}
+      ${choiceCard("randomAssaultOffense", "✦", "#fda4af", "Assault attack")}
+    `;
+  }
+
+  function renderContractCards() {
+    const defs = contractDefs[activeContractTab];
+    el.contractCards.innerHTML = Object.entries(defs).map(([key, c]) => `
+      <div class="contract-card" data-contract="${key}">
+        <div class="card-head"><div class="card-title">${c.name}</div><div class="card-price">${formatCost(c.cost)}</div></div>
+        <div class="card-meta">${c.note}</div>
+        <div class="card-tags"><span class="tag">${c.tag}</span><span class="tag">x${c.count}</span></div>
+      </div>
+    `).join("");
+  }
+
+  function renderQueue() {
+    if (!state.playerQueue.length) {
+      el.queueView.innerHTML = `<span class="muted">No contracts queued.</span>`;
+      return;
+    }
+    el.queueView.innerHTML = state.playerQueue.map(q => `<span class="queue-chip">${contractDefs.queued[q.key].name}</span>`).join("");
+  }
+
+  function renderLog() {
+    el.log.innerHTML = state.log.length ? state.log.map(x => `<div class="log-entry">${x}</div>`).join("") : `<div class="log-entry">Bosses drop items. Send contracts to make the AI leak.</div>`;
+  }
+
+  function renderSelectedPanel() {
+    const tower = getSelectedTower();
+    if (!tower) {
+      el.selectedPanel.innerHTML = `<div class="selected-empty">No tower selected. Click one of your towers on the left lane to inspect attack damage, attack speed, level, items, abilities, replacement cooldown, and merge options.</div>`;
+      return;
+    }
+    const def = towerDefs[tower.type];
+    const st = towerStats(tower, state.player);
+    const xpMax = xpNeeded(tower);
+    const xpPct = tower.level >= MAX_LEVEL ? 100 : Math.min(100, tower.xp / xpMax * 100);
+    const slots = new Array(slotsForTower(tower)).fill(0).map((_, i) => {
+      const item = state.inventory.find(it => it.id === tower.itemIds[i]);
+      const itemDef = item ? itemDefs[item.key] : null;
+      return `<button class="slot ${item ? "equipped" : ""}" data-action="slot" data-arg="${i}" title="Equip slot ${i + 1}">
+        <span class="idx">${i + 1}</span><span class="icon">${itemDef ? itemDef.icon : "+"}</span>
+      </button>`;
+    }).join("");
+    const mergeReady = tower.level >= MAX_LEVEL && tower.grade < MAX_GRADE;
+    const partner = state.player.towers.find(t => !t.cloneTemp && t.id !== tower.id && t.type === tower.type && t.grade === tower.grade && t.level === MAX_LEVEL);
+    const canTrain = tower.level < MAX_LEVEL;
+    const hpText = `${Math.round(tower.hp || tower.maxHp)} / ${Math.round(tower.maxHp || towerMaxHp(tower))}`;
+    const focusedEnemyTower = tower.focusTowerId ? state.ai.towers.find(t => t.id === tower.focusTowerId) : null;
+    const targetText = isAttackTower(tower) ? (focusedEnemyTower ? `${towerDefs[focusedEnemyTower.type].name}` : "Random enemy tower") : "Lane enemies";
+    const statusText = tower.freezeTimer > 0 ? `Frozen ${tower.freezeTimer.toFixed(1)}s` : tower.slowedTimer > 0 ? `Slowed ${tower.slowedTimer.toFixed(1)}s` : tower.cloneTemp ? `Clone ${tower.cloneExpires.toFixed(1)}s` : "Operational";
+
+    el.selectedPanel.innerHTML = `
+      <div class="tower-name-line"><span class="orb" style="color:${def.color}"></span><div><strong>${def.icon} ${def.name}</strong><div class="muted">Grade ${roman(tower.grade)} · Level ${tower.level}/${MAX_LEVEL}</div></div></div>
+      <div class="mini-grid">
+        <div class="mini"><small>Attack damage</small><strong>${st.damage.toFixed(1)}</strong></div>
+        <div class="mini"><small>Attack speed</small><strong>${st.attackSpeed.toFixed(2)}/s</strong></div>
+        <div class="mini"><small>DPS estimate</small><strong>${st.dps.toFixed(1)}</strong></div>
+        <div class="mini"><small>Range</small><strong>${Math.round(st.range)}</strong></div>
+        <div class="mini"><small>Health</small><strong>${hpText}</strong></div>
+        <div class="mini"><small>Status</small><strong>${statusText}</strong></div>
+        <div class="mini"><small>Kills</small><strong>${tower.kills}</strong></div>
+        <div class="mini"><small>Total damage</small><strong>${Math.round(tower.totalDamage)}</strong></div>
+        <div class="mini"><small>Targeting</small><strong>${targetText}</strong></div>
+        <div class="mini"><small>Role</small><strong>${isAttackTower(tower) ? "Assault" : "Defense"}</strong></div>
+      </div>
+      <div class="section">
+        <div class="section-title">XP / cap</div>
+        <div class="soft">${tower.level >= MAX_LEVEL ? "Level cap reached. Merge is now the power path." : `${Math.floor(tower.xp)} / ${xpMax} XP to next level.`}</div>
+        <div class="xpbar"><span style="width:${xpPct}%"></span></div>
+      </div>
+      <div class="section">
+        <div class="section-title">Ability</div>
+        <div class="soft">${def.ability}${isAttackTower(tower) ? `<br><span class="focus-hint">Assault control:</span> select this tower, then click/right-click an enemy tower to focus it.` : ""}${tower.type === "portal" ? `<br>Portal A: ${tower.portalA ? `${tower.portalA.col},${tower.portalA.row}` : "not set"}. Portal B: ${tower.portalB ? `${tower.portalB.col},${tower.portalB.row}` : "not set"}. CD: ${(tower.portalCd || 0).toFixed(1)}s.` : ""}</div>
+      </div>
+      <div class="section">
+        <div class="section-title">Inventory slots</div>
+        <div class="slot-row">${slots}</div>
+      </div>
+      <div class="section row">
+        <button class="primary" data-action="train" ${canTrain ? "" : "disabled"}>Train ${canTrain ? formatCost(trainCost(tower)) : "Max"}</button>
+        <button class="gold-btn" data-action="merge" ${mergeReady && partner ? "" : "disabled"}>Merge</button>
+        <button class="ghost" data-action="replace" ${state.replaceCd <= 0 ? "" : "disabled"}>Relocate</button>
+        <button class="danger" data-action="sell">Sell</button>
+      </div>
+      ${tower.type === "portal" ? `<div class="section row"><button class="ghost" data-action="portalA">Set portal A</button><button class="ghost" data-action="portalB">Set portal B</button></div>` : ""}
+      <div class="section muted">Relocation is global and has a ${REPLACE_CD}s cooldown. Defense and dual-place support towers can move to empty non-path tiles; assault-only towers move to empty assault slots. The tower keeps level, grade, health, stats, and items.</div>
+    `;
+  }
+
+  function roman(n) { return ["", "I", "II", "III", "IV", "V"][n] || String(n); }
+
+  function draw() {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = "source-over";
+    ctx.setLineDash([]);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawBackdrop();
+    slotHitRects = [];
+    drawLane(state.player);
+    drawLane(state.ai);
+    drawDivider();
+    if (state.paused) drawBanner("Paused", "Planning is allowed. Press Resume to continue.");
+    if (state.gameOver) drawBanner(state.victory ? "Victory" : "Defeat", state.victory ? "The AI mirror core has fallen." : "Your core has fallen.");
+  }
+
+  function drawBackdrop() {
+    ctx.fillStyle = "#07111f";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const g = ctx.createRadialGradient(540, 290, 40, 540, 290, 640);
+    g.addColorStop(0, "rgba(30,41,59,0.32)");
+    g.addColorStop(1, "rgba(3,7,18,0.10)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  function drawLane(lane) {
+    drawBoardFrame(lane);
+    drawGrid(lane);
+    drawPath(lane);
+    drawPortals(lane);
+    drawBeams(lane);
+    drawAttackSlots(lane);
+    drawTowers(lane);
+    drawTentacles(lane);
+    drawEnemies(lane);
+    drawShots(lane);
+    drawEffects(lane);
+    drawFloaters(lane);
+    drawLaneHeader(lane);
+  }
+
+  function drawBoardFrame(lane) {
+    ctx.fillStyle = lane.side === "player" ? "rgba(8,47,73,0.26)" : "rgba(88,28,135,0.22)";
+    roundRect(lane.boardX - 10, lane.boardY - 50, BOARD_W + 20, BOARD_H + 124, 24, true, false);
+    ctx.strokeStyle = lane.side === "player" ? "rgba(56,189,248,0.28)" : "rgba(216,180,254,0.26)";
+    ctx.lineWidth = 1;
+    roundRect(lane.boardX - 10, lane.boardY - 50, BOARD_W + 20, BOARD_H + 124, 24, false, true);
+    if (lane.leakedFlash > 0) {
+      ctx.fillStyle = `rgba(239,68,68,${0.22 * lane.leakedFlash})`;
+      roundRect(lane.boardX, lane.boardY, BOARD_W, BOARD_H, 15, true, false);
+    }
+  }
+
+  function drawLaneHeader(lane) {
+    ctx.textAlign = "left";
+    ctx.fillStyle = lane.side === "player" ? "#7dd3fc" : "#d8b4fe";
+    ctx.font = "900 17px Inter, system-ui";
+    ctx.fillText(lane.label, lane.boardX, lane.boardY - 24);
+    ctx.fillStyle = "#b7c3d7";
+    ctx.font = "800 12px Inter, system-ui";
+    ctx.fillText(`Lives ${lane.lives} · Enemies ${lane.enemies.length} · Towers ${lane.towers.length}`, lane.boardX, lane.boardY - 6);
+  }
+
+  function drawGrid(lane) {
+    ctx.fillStyle = "rgba(2,6,23,0.62)";
+    roundRect(lane.boardX, lane.boardY, BOARD_W, BOARD_H, 16, true, false);
+    ctx.strokeStyle = "rgba(148,163,184,0.12)";
+    ctx.lineWidth = 1;
+    for (let c = 0; c <= COLS; c++) {
+      ctx.beginPath(); ctx.moveTo(lane.boardX + c * CELL, lane.boardY); ctx.lineTo(lane.boardX + c * CELL, lane.boardY + BOARD_H); ctx.stroke();
+    }
+    for (let r = 0; r <= ROWS; r++) {
+      ctx.beginPath(); ctx.moveTo(lane.boardX, lane.boardY + r * CELL); ctx.lineTo(lane.boardX + BOARD_W, lane.boardY + r * CELL); ctx.stroke();
+    }
+  }
+
+  function drawPath(lane) {
+    for (const [c, r] of lane.pathCells) {
+      ctx.fillStyle = "rgba(71,85,105,0.72)";
+      roundRect(lane.boardX + c * CELL + 2, lane.boardY + r * CELL + 2, CELL - 4, CELL - 4, 8, true, false);
+    }
+    ctx.strokeStyle = lane.side === "player" ? "rgba(125,211,252,0.88)" : "rgba(216,180,254,0.82)";
+    ctx.lineWidth = 5;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.beginPath();
+    ctx.moveTo(lane.pathPoints[0].x, lane.pathPoints[0].y);
+    for (let i = 1; i < lane.pathPoints.length; i++) ctx.lineTo(lane.pathPoints[i].x, lane.pathPoints[i].y);
+    ctx.stroke();
+    ctx.fillStyle = "#22c55e"; circle(lane.pathPoints[0].x, lane.pathPoints[0].y, 7, true);
+    const end = lane.pathPoints[lane.pathPoints.length - 1];
+    ctx.fillStyle = "#ef4444"; circle(end.x, end.y, 7, true);
+  }
+
+  function drawPortals(lane) {
+    for (const tower of lane.towers) {
+      if (tower.type !== "portal") continue;
+      for (const [label, p] of [["A", tower.portalA], ["B", tower.portalB]]) {
+        if (!p) continue;
+        ctx.strokeStyle = towerDefs.portal.color;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+        circle(p.x, p.y, 14 + Math.sin(performance.now()/180) * 2, false);
+        ctx.setLineDash([]);
+        ctx.fillStyle = "#f5d0fe";
+        ctx.font = "900 11px Inter, system-ui";
+        ctx.textAlign = "center";
+        ctx.fillText(label, p.x, p.y + 4);
+      }
+      if (tower.portalA && tower.portalB) {
+        ctx.strokeStyle = "rgba(232,121,249,0.33)";
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(tower.portalA.x, tower.portalA.y); ctx.lineTo(tower.portalB.x, tower.portalB.y); ctx.stroke();
+      }
+    }
+  }
+
+  function drawBeams(lane) {
+    for (const beam of lane.beams) {
+      const pulse = 0.45 + Math.sin(performance.now()/90) * 0.15;
+      ctx.strokeStyle = `rgba(250,204,21,${pulse})`;
+      ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(beam.a.x, beam.a.y); ctx.lineTo(beam.b.x, beam.b.y); ctx.stroke();
+      ctx.strokeStyle = "rgba(255,255,255,0.45)";
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(beam.a.x, beam.a.y); ctx.lineTo(beam.b.x, beam.b.y); ctx.stroke();
+    }
+  }
+
+  function drawAttackSlots(lane) {
+    ctx.textAlign = "center";
+    ctx.fillStyle = lane.side === "player" ? "rgba(248,113,113,0.12)" : "rgba(216,180,254,0.10)";
+    roundRect(lane.boardX + 68, ATTACK_SLOT_Y - 26, BOARD_W - 136, 52, 18, true, false);
+    ctx.strokeStyle = "rgba(248,113,113,0.26)";
+    roundRect(lane.boardX + 68, ATTACK_SLOT_Y - 26, BOARD_W - 136, 52, 18, false, true);
+    ctx.fillStyle = "#b7c3d7";
+    ctx.font = "900 9px Inter, system-ui";
+    ctx.fillText("ASSAULT SLOTS", lane.boardX + BOARD_W / 2, ATTACK_SLOT_Y - 34);
+    for (let i = 0; i < ATTACK_SLOTS; i++) {
+      const p = attackSlotCenter(lane, i);
+      const occupied = getTowerAtAttackSlot(lane, i);
+      ctx.fillStyle = occupied ? "rgba(127,29,29,0.22)" : "rgba(2,6,23,0.66)";
+      circle(p.x, p.y, 20, true);
+      ctx.strokeStyle = occupied ? towerDefs[occupied.type].color : "rgba(248,113,113,0.46)";
+      ctx.lineWidth = 2;
+      circle(p.x, p.y, 20, false);
+      if (!occupied && lane.side === "player") {
+        ctx.fillStyle = "rgba(248,113,113,0.72)";
+        ctx.font = "900 14px Inter, system-ui";
+        ctx.fillText("+", p.x, p.y + 5);
+      }
+    }
+  }
+
+  function towerXpPct(tower) {
+    if (tower.level >= MAX_LEVEL) return 1;
+    return Math.max(0, Math.min(1, tower.xp / Math.max(1, xpNeeded(tower))));
+  }
+
+  function drawTowers(lane) {
+    for (const tower of lane.towers) {
+      const def = towerDefs[tower.type];
+      const selected = lane.side === "player" && tower.id === state.selectedTowerId;
+      if (selected) {
+        const st = towerStats(tower, lane);
+        ctx.strokeStyle = isAttackTower(tower) ? "rgba(248,113,113,0.25)" : "rgba(56,189,248,0.26)";
+        ctx.lineWidth = 2;
+        circle(tower.x, tower.y, st.range, false);
+      }
+      if (tower.cloneTemp) {
+        ctx.globalAlpha = Math.max(0.45, Math.min(1, tower.cloneExpires / 4));
+      }
+      const r = 17 + tower.grade;
+      ctx.fillStyle = "rgba(2,6,23,0.88)";
+      circle(tower.x, tower.y, r, true);
+
+      // XP ring: the outer colored circle fills clockwise as XP grows toward the next level.
+      ctx.strokeStyle = "rgba(51,65,85,0.95)";
+      ctx.lineWidth = 4;
+      circle(tower.x, tower.y, r + 3, false);
+      ctx.strokeStyle = def.color;
+      ctx.lineWidth = selected ? 5 : 4;
+      ctx.beginPath();
+      ctx.arc(tower.x, tower.y, r + 3, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * towerXpPct(tower));
+      ctx.stroke();
+
+      // Health ring sits between XP ring and the icon.
+      const hpPct = Math.max(0, Math.min(1, (tower.hp || tower.maxHp || 1) / (tower.maxHp || 1)));
+      ctx.strokeStyle = hpPct > 0.55 ? "#22c55e" : hpPct > 0.25 ? "#f59e0b" : "#ef4444";
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(tower.x, tower.y, r - 2, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * hpPct);
+      ctx.stroke();
+
+      if (tower.freezeTimer > 0) {
+        ctx.strokeStyle = "#bfdbfe";
+        ctx.lineWidth = 3;
+        ctx.setLineDash([4, 4]);
+        circle(tower.x, tower.y, r + 9, false);
+        ctx.setLineDash([]);
+      }
+      if (tower.focusTowerId && lane.side === "player") {
+        ctx.strokeStyle = "#fef08a";
+        ctx.lineWidth = 2;
+        circle(tower.x, tower.y, r + 12, false);
+      }
+
+      ctx.textAlign = "center";
+      ctx.font = "900 13px Inter, system-ui";
+      ctx.fillStyle = "#eef4ff";
+      ctx.fillText(def.icon, tower.x, tower.y + 5);
+
+      // Professional compact badges: grade top-left, level bottom-right.
+      ctx.fillStyle = "rgba(2,6,23,0.92)";
+      roundRect(tower.x - r - 8, tower.y - r - 8, 22, 15, 7, true, false);
+      ctx.fillStyle = "#e0f2fe";
+      ctx.font = "1000 8px Inter, system-ui";
+      ctx.fillText(`G${tower.grade}`, tower.x - r + 3, tower.y - r + 3);
+      ctx.fillStyle = "rgba(2,6,23,0.92)";
+      roundRect(tower.x + r - 12, tower.y + r - 6, 22, 15, 7, true, false);
+      ctx.fillStyle = "#fef3c7";
+      ctx.fillText(`L${tower.level}`, tower.x + r - 1, tower.y + r + 5);
+
+      if (tower.cloneTemp) {
+        ctx.fillStyle = "#e9d5ff";
+        ctx.font = "900 8px Inter, system-ui";
+        ctx.fillText(`${Math.ceil(tower.cloneExpires)}s`, tower.x, tower.y + r + 19);
+        ctx.globalAlpha = 1;
+      }
+      if (selected) drawTowerSlots(tower);
+    }
+  }
+
+  function drawTowerSlots(tower) {
+    const slots = slotsForTower(tower);
+    const totalW = slots * 30 + (slots - 1) * 5;
+    let x = tower.x - totalW / 2;
+    const y = tower.y - 58;
+    for (let i = 0; i < slots; i++) {
+      const item = state.inventory.find(it => it.id === tower.itemIds[i]);
+      const def = item ? itemDefs[item.key] : null;
+      ctx.fillStyle = item ? "rgba(22,163,74,0.62)" : "rgba(0,0,0,0.66)";
+      roundRect(x, y, 30, 30, 8, true, false);
+      ctx.strokeStyle = item ? "rgba(34,197,94,0.92)" : "rgba(148,163,184,0.48)";
+      ctx.lineWidth = 1;
+      roundRect(x, y, 30, 30, 8, false, true);
+      ctx.fillStyle = "#eef4ff";
+      ctx.font = "900 15px Inter, system-ui";
+      ctx.textAlign = "center";
+      ctx.fillText(def ? def.icon : "+", x + 15, y + 20);
+      slotHitRects.push({ x, y, w: 30, h: 30, slot: i });
+      x += 35;
+    }
+  }
+
+  function drawTentacles(lane) {
+    for (const ten of lane.tentacles || []) {
+      const pct = Math.max(0, Math.min(1, ten.time / 3));
+      ctx.globalAlpha = 0.55 + pct * 0.35;
+      ctx.strokeStyle = ten.color;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(ten.x - 7, ten.y + 8);
+      ctx.quadraticCurveTo(ten.x + 8 * Math.sin(performance.now()/140 + ten.depth), ten.y - 16, ten.x + 7, ten.y + 7);
+      ctx.stroke();
+      ctx.fillStyle = "rgba(88,28,135,0.72)";
+      circle(ten.x, ten.y + 5, 6, true);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  function drawEnemies(lane) {
+    for (const enemy of lane.enemies) {
+      if (enemy.spawnDelay > 0) continue;
+      const p = enemyPos(lane, enemy);
+      const bob = Math.sin(performance.now()/150 + enemy.wobble) * 2;
+      ctx.fillStyle = "rgba(0,0,0,0.32)";
+      ctx.beginPath(); ctx.ellipse(p.x, p.y + enemy.radius + 5, enemy.radius * 1.1, 4, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = enemy.color;
+      circle(p.x, p.y + bob, enemy.radius, true);
+      if (enemy.aura) {
+        ctx.strokeStyle = enemy.aura === "haste" ? "rgba(250,204,21,0.38)" : enemy.aura === "jammer" ? "rgba(147,197,253,0.38)" : "rgba(196,181,253,0.38)";
+        ctx.lineWidth = 2;
+        circle(p.x, p.y + bob, enemy.aura === "jammer" ? 120 : 108, false);
+      }
+      if (enemy.boss) {
+        ctx.strokeStyle = enemy.enraged ? "#ef4444" : "#f59e0b";
+        ctx.lineWidth = 3;
+        circle(p.x, p.y + bob, enemy.radius + 6 + Math.sin(performance.now()/110)*2, false);
+      }
+      if (enemy.poisons && enemy.poisons.length) { ctx.strokeStyle = "rgba(163,230,53,0.82)"; ctx.lineWidth = 2; circle(p.x, p.y + bob, enemy.radius + 5, false); }
+      if (enemy.slowTimer > 0) { ctx.strokeStyle = "#93c5fd"; ctx.lineWidth = 2; circle(p.x, p.y + bob, enemy.radius + 4, false); }
+      if (enemy.stunTimer > 0) {
+        ctx.fillStyle = "#fef3c7"; ctx.font = "900 12px Inter, system-ui"; ctx.textAlign = "center"; ctx.fillText("STUN", p.x, p.y - enemy.radius - 15);
+      }
+      if (lane.side === "player" && lane.focusEnemyId === enemy.id) {
+        ctx.strokeStyle = "#fef08a";
+        ctx.lineWidth = 3;
+        circle(p.x, p.y + bob, enemy.radius + 10 + Math.sin(performance.now()/90)*2, false);
+        ctx.fillStyle = "#fef08a";
+        ctx.font = "900 11px Inter, system-ui";
+        ctx.textAlign = "center";
+        ctx.fillText("FOCUS", p.x, p.y - enemy.radius - 26);
+      }
+      if (enemy.vendor) {
+        ctx.fillStyle = "#111827";
+        ctx.font = "900 13px Inter, system-ui";
+        ctx.textAlign = "center";
+        ctx.fillText("$", p.x, p.y + bob + 4);
+      }
+      drawHpBar(p.x, p.y - enemy.radius - 12 + bob, enemy.hp / enemy.maxHp, enemy.boss ? 52 : 32);
+    }
+  }
+
+  function drawHpBar(x, y, pct, w) {
+    pct = Math.max(0, Math.min(1, pct));
+    ctx.fillStyle = "rgba(2,6,23,0.9)"; roundRect(x - w/2, y, w, 5, 3, true, false);
+    ctx.fillStyle = pct > 0.5 ? "#22c55e" : pct > 0.24 ? "#f59e0b" : "#ef4444";
+    roundRect(x - w/2, y, w * pct, 5, 3, true, false);
+  }
+
+  function drawShots(lane) {
+    for (const s of lane.shots) {
+      const denom = s.arc ? 0.42 : 0.16;
+      ctx.globalAlpha = Math.max(0, s.time / denom);
+      ctx.strokeStyle = s.color;
+      ctx.lineWidth = s.width || 2;
+      ctx.beginPath();
+      ctx.moveTo(s.x1, s.y1);
+      if (s.arc) {
+        const mx = (s.x1 + s.x2) / 2;
+        const my = Math.min(s.y1, s.y2) - 58;
+        ctx.quadraticCurveTo(mx, my, s.x2, s.y2);
+      } else {
+        ctx.lineTo(s.x2, s.y2);
+      }
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  function drawEffects(lane) {
+    for (const e of lane.effects) {
+      const a = Math.max(0, e.time);
+      if (e.type === "splash") {
+        ctx.globalAlpha = a / 0.25 * 0.55;
+        ctx.strokeStyle = e.color;
+        ctx.lineWidth = 2;
+        circle(e.x, e.y, e.r * (1 + (0.25 - a)), false);
+      } else if (e.type === "death") {
+        ctx.globalAlpha = a / 0.35;
+        ctx.fillStyle = e.color;
+        circle(e.x, e.y, 10 + (0.35 - a) * 25, true);
+      } else if (e.type === "portal") {
+        ctx.globalAlpha = a / 0.65;
+        ctx.strokeStyle = e.color;
+        ctx.lineWidth = 3;
+        circle(e.x, e.y, 12 + (0.65 - a) * 40, false);
+      } else if (e.type === "heal") {
+        ctx.globalAlpha = a / 0.45 * 0.48;
+        ctx.strokeStyle = e.color;
+        ctx.lineWidth = 3;
+        circle(e.x, e.y, e.r * (1 + (0.45 - a) * 0.6), false);
+      } else if (e.type === "blizzard") {
+        ctx.globalAlpha = Math.max(0.16, a / (e.life || 4.5) * 0.42);
+        ctx.fillStyle = "rgba(191,219,254,0.12)";
+        circle(e.x, e.y, e.r, true);
+        ctx.strokeStyle = e.color;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 6]);
+        circle(e.x, e.y, e.r * (0.96 + Math.sin(performance.now()/120)*0.04), false);
+        ctx.setLineDash([]);
+      } else if (e.type === "tentacle") {
+        ctx.globalAlpha = a / 0.35 * 0.55;
+        ctx.strokeStyle = e.color;
+        ctx.lineWidth = 2;
+        circle(e.x, e.y, 12 + (0.35 - a) * 18, false);
+      } else if (e.type === "towerHit") {
+        ctx.globalAlpha = a / 0.42;
+        ctx.strokeStyle = e.color;
+        ctx.lineWidth = 3;
+        circle(e.x, e.y, 22 + (0.42 - a) * 22, false);
+      } else if (e.type === "freezeTower") {
+        ctx.globalAlpha = a / 0.42;
+        ctx.strokeStyle = e.color;
+        ctx.lineWidth = 3;
+        ctx.setLineDash([4, 4]);
+        circle(e.x, e.y, 22 + (0.42 - a) * 26, false);
+        ctx.setLineDash([]);
+      } else if (e.type === "clone") {
+        ctx.globalAlpha = a / 0.7;
+        ctx.strokeStyle = e.color;
+        ctx.lineWidth = 2;
+        circle(e.x, e.y, 18 + (0.7 - a) * 34, false);
+      }
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  function drawFloaters(lane) {
+    for (const f of lane.floaters) {
+      ctx.globalAlpha = Math.max(0, f.time / f.life);
+      ctx.fillStyle = f.color;
+      ctx.font = "1000 12px Inter, system-ui";
+      ctx.textAlign = "center";
+      ctx.fillText(f.text, f.x, f.y);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  function drawDivider() {
+    ctx.strokeStyle = "rgba(148,163,184,0.16)";
+    ctx.setLineDash([8, 8]);
+    ctx.beginPath(); ctx.moveTo(540, 62); ctx.lineTo(540, 582); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = "rgba(15,23,42,0.8)";
+    roundRect(493, 50, 94, 28, 999, true, false);
+    ctx.fillStyle = "#b7c3d7";
+    ctx.font = "900 11px Inter, system-ui";
+    ctx.textAlign = "center";
+    ctx.fillText("MIRROR AI", 540, 68);
+  }
+
+  function drawBanner(title, sub) {
+    ctx.fillStyle = "rgba(2,6,23,0.78)";
+    roundRect(315, 238, 450, 110, 24, true, false);
+    ctx.strokeStyle = "rgba(148,163,184,0.28)";
+    roundRect(315, 238, 450, 110, 24, false, true);
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#eef4ff";
+    ctx.font = "1000 34px Inter, system-ui";
+    ctx.fillText(title, 540, 286);
+    ctx.fillStyle = "#b7c3d7";
+    ctx.font = "800 14px Inter, system-ui";
+    ctx.fillText(sub, 540, 318);
+  }
+
+  function circle(x, y, r, fill) {
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); fill ? ctx.fill() : ctx.stroke();
+  }
+
+  function roundRect(x, y, w, h, r, fill, stroke) {
+    r = Math.max(0, Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2));
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+    if (fill) ctx.fill();
+    if (stroke) ctx.stroke();
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
